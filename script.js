@@ -1,6 +1,6 @@
 /**
- * Safe Street - v8.0 (English Version)
- * @description Traffic management game.
+ * Safe Street - v8.1 (Final English Version)
+ * @description Traffic management game with English localization and optimized collision logic.
  * @author Antigravity
  */
 

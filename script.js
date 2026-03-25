@@ -1,6 +1,6 @@
 /**
- * Rua Segura - v7.1 (Visual Assets Restored + Collision Fixes)
- * @description Jogo de fiscalização de trânsito desenvolvido em JavaScript Vanilla.
+ * Safe Street - v8.0 (English Version)
+ * @description Traffic management game.
  * @author Antigravity
  */
 
@@ -19,6 +19,7 @@ const cnhAge = document.getElementById('cnh-age');
 const cnhPlate = document.getElementById('cnh-plate');
 const cnhStatus = document.getElementById('cnh-status');
 const cnhPoints = document.getElementById('cnh-points');
+const cnhPhone = document.getElementById('cnh-phone');
 const inspectFineBtn = document.getElementById('inspect-fine-btn');
 const inspectReleaseBtn = document.getElementById('inspect-release-btn');
 
@@ -28,18 +29,18 @@ const failRestartBtn = document.getElementById('fail-restart-btn');
 const startBtn = document.getElementById('start-btn');
 const blitzBtn = document.getElementById('blitz-btn');
 
-// --- Configurações ---
+// --- Configuration ---
 const DIFFICULTY = {
     carSpawnRate: 0.035,
     minCarSpeed: 2.2,
     maxCarSpeed: 4.5,
     phoneInfractionRate: 0.3,
     redLightInfractionRate: 0.3,
-    gameDurationSeconds: 300,  // 5 Minutos (300 segundos)
+    gameDurationSeconds: 300,
     stopLineX: 650,
-    blitzLineX: 520,  // Ajustado para o modelo PM original
+    blitzLineX: 520,
     safeDistance: 140,
-    minimumGap: 45,   // FIX: Mantido gap maior para evitar overlap
+    minimumGap: 45,
     laneCount: 4,
 };
 
@@ -55,10 +56,10 @@ CAR_IMAGES.green_sedan.src = 'assets/car_green_sedan.png';
 CAR_IMAGES.van.src = 'assets/car_van.png';
 CAR_IMAGES.police.src = 'PM.png';
 
-const NAMES = ["José", "Maria", "João", "Ana", "Carlos", "Francisca", "Paulo", "Antônia", "Lucas", "Adriana", "Pedro", "Juliana"];
-const SURNAMES = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes"];
+const NAMES = ["James", "Mary", "John", "Patricia", "Robert", "Jennifer", "Michael", "Linda", "William", "Elizabeth", "David", "Barbara"];
+const SURNAMES = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"];
 
-// --- Estado do Jogo ---
+// --- Game State ---
 let gameState = {
     score: 0,
     timeLeft: DIFFICULTY.gameDurationSeconds,
@@ -71,10 +72,10 @@ let gameState = {
     currentLicenseCar: null,
     cars: [],
     feedbackMessages: [],
-    skyline: [] // Cenário restaurado
+    skyline: []
 };
 
-// --- Cores ---
+// --- Colors ---
 const COLORS = {
     road: '#2c3e50',
     line: '#ecf0f1',
@@ -88,20 +89,19 @@ const COLORS = {
 class Car {
     constructor(lane) {
         this.width = 110;
-        this.height = 55; // Altura restaurada para os sprites
+        this.height = 55;
         this.lane = lane;
         this.x = -150;
         this.y = 210 + (this.lane * 50);
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
         
-        // Atribui sprite aleatório (restaurado)
         const keys = Object.keys(CAR_IMAGES).filter(k => k !== 'police');
         this.sprite = CAR_IMAGES[keys[Math.floor(Math.random() * keys.length)]];
 
         this.name = NAMES[Math.floor(Math.random() * NAMES.length)] + " " + SURNAMES[Math.floor(Math.random() * SURNAMES.length)];
         this.age = Math.floor(Math.random() * 60) + 12;
-        this.plate = "RSG" + Math.floor(Math.random()*9000 + 1000);
+        this.plate = "SFE" + Math.floor(Math.random()*9000 + 1000);
         this.hasLicense = Math.random() < 0.82;
         this.licensePoints = Math.floor(Math.random() * 60);
 
@@ -128,13 +128,10 @@ class Car {
         if (this.isApprehended) { this.y -= 4.5; this.x += 1; return false; }
 
         const frontX = this.x + this.width;
-        // FIX: Mantida lógica de detecção precisa com ordenação
         const carAhead = gameState.cars
             .filter(c => {
                 if (c === this || c.x <= this.x) return false;
-                // Durante a Blitz, considera todos os carros à frente na fila (faixa 0)
                 if (isBlitzActive && !this.isInspected && !c.isInspected) return true;
-                // Trânsito normal: apenas carros na mesma faixa (distância Y < 45)
                 return Math.abs(c.y - this.y) < 45;
             })
             .sort((a, b) => a.x - b.x)[0];
@@ -146,7 +143,6 @@ class Car {
         }
 
         if (isBlitzActive && !this.isInspected && this.lane === 0) {
-            // Avança até a linha da blitz (perto do policial)
             if (frontX >= DIFFICULTY.blitzLineX - 5) {
                 targetSpeed = 0;
                 if (frontX >= DIFFICULTY.blitzLineX) this.speed = 0;
@@ -176,7 +172,7 @@ class Car {
         if (!isBlitzActive && trafficLight === 'RED' && frontX > DIFFICULTY.stopLineX && this.x < DIFFICULTY.stopLineX + 40 && this.speed > 0.6) {
             if (!this.hasBeenPenalized) {
                 gameState.score -= 25; this.hasBeenPenalized = true;
-                addFeedback('-25 AVANÇO!', this.x + 50, this.y, '#ff9f43'); scoreEl.innerText = gameState.score;
+                addFeedback('-25 RED LIGHT!', this.x + 50, this.y, '#ff9f43'); scoreEl.innerText = gameState.score;
             }
         }
 
@@ -185,13 +181,11 @@ class Car {
     }
 
     draw(ctx) {
-        // Sombra suave (restaurada)
         ctx.fillStyle = "rgba(0,0,0,0.3)";
         ctx.fillRect(this.x + 5, this.y + 10, this.width - 10, this.height - 10);
         
         ctx.imageSmoothingEnabled = false; 
         
-        // Desenho com Sprites e Inversão (restaurado)
         if (this.sprite === CAR_IMAGES.red_sedan || this.sprite === CAR_IMAGES.green_sedan) {
             ctx.save();
             ctx.translate(this.x + this.width, this.y);
@@ -202,7 +196,6 @@ class Car {
             ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
         }
 
-        // Ícone Celular (restaurado)
         if (this.hasPhoneInfraction) {
             ctx.fillStyle = '#222'; ctx.fillRect(this.x + this.width - 30, this.y + 10, 8, 14);
             ctx.fillStyle = this.isFined || this.isApprehended ? COLORS.trafficGreen : '#3498db';
@@ -214,7 +207,6 @@ class Car {
             ctx.lineWidth = 3; ctx.strokeRect(this.x - 2, this.y - 2, this.width + 4, this.height + 4);
         }
 
-        // Balão de Blitz (restaurado)
         if (gameState.isBlitzActive && this.lane === 0 && !this.isInspected && !this.isApprehended) {
             const carAhead = gameState.cars.find(c => c.lane === 0 && c.x > this.x && !c.isInspected && !c.isApprehended);
             if (!carAhead && (this.x + this.width) > DIFFICULTY.blitzLineX - 350) {
@@ -222,17 +214,17 @@ class Car {
                 ctx.fillRect(this.x + 30, this.y - 45, 80, 25);
                 ctx.fillStyle = "#222";
                 ctx.font = "bold 10px Arial";
-                ctx.fillText("CLIQUE AQUI", this.x + 35, this.y - 28);
+                ctx.fillText("CLICK HERE", this.x + 35, this.y - 28);
             }
         }
     }
 }
 
-// --- Funções core ---
+// --- Core Functions ---
 function init() { 
     canvas.width = 900; 
     canvas.height = 500; 
-    generateSkyline(); // Restaurado
+    generateSkyline();
     drawBackground(); 
 }
 
@@ -277,9 +269,11 @@ function showFailScreen() { gameState.isGameOver = true; failScreen.classList.re
 function openInspection(car) {
     gameState.isPaused = true; gameState.currentLicenseCar = car;
     cnhName.innerText = car.name; cnhAge.innerText = car.age; cnhPlate.innerText = car.plate;
-    cnhStatus.innerText = car.hasLicense ? 'HABILITADO' : '!!! SEM HABILITAÇÃO !!!';
+    cnhStatus.innerText = car.hasLicense ? 'LICENSED' : '!!! UNLICENSED !!!';
     cnhStatus.style.color = car.hasLicense ? '#27ae60' : COLORS.trafficRed;
     cnhPoints.innerText = car.hasLicense ? car.licensePoints : '---';
+    cnhPhone.innerText = car.hasPhoneInfraction ? 'YES' : 'NO';
+    cnhPhone.style.color = car.hasPhoneInfraction ? COLORS.trafficRed : '#27ae60';
     inspectionScreen.classList.remove('hidden');
 }
 
@@ -291,14 +285,14 @@ function resolveInspection(isFining) {
     if (isFining) {
         if (isIrregular) {
             gameState.score += 150;
-            addFeedback('+150 APREENDIDO!', car.x, car.y - 50, COLORS.trafficGreen);
+            addFeedback('+150 IMPOUNDED!', car.x, car.y - 50, COLORS.trafficGreen);
             car.isApprehended = true;
         } else {
             gameState.score -= 50; addFeedback('-50 REGULAR!', car.x, car.y, COLORS.trafficRed);
         }
     } else {
-        if (isIrregular) { gameState.score -= 100; addFeedback('-100 ESCAPOU!', car.x, car.y, COLORS.trafficRed); }
-        else { gameState.score += 30; addFeedback('+30 LIBERADO!', car.x, car.y, COLORS.trafficGreen); }
+        if (isIrregular) { gameState.score -= 100; addFeedback('-100 ESCAPED!', car.x, car.y, COLORS.trafficRed); }
+        else { gameState.score += 30; addFeedback('+30 RELEASED!', car.x, car.y, COLORS.trafficGreen); }
     }
     scoreEl.innerText = gameState.score; gameState.currentLicenseCar = null;
 }
@@ -307,7 +301,7 @@ function resetGame() {
     gameState.score = 0; gameState.timeLeft = DIFFICULTY.gameDurationSeconds; gameState.isGameOver = false; gameState.isBlitzActive = false;
     gameState.blitzCooldown = false; gameState.isPaused = false; gameState.cars = []; gameState.trafficLight = 'GREEN'; scoreEl.innerText = '0';
     gameOverScreen.classList.add('hidden'); failScreen.classList.add('hidden'); inspectionScreen.classList.add('hidden');
-    timerEl.innerText = '05:00'; blitzBtn.disabled = false; blitzBtn.innerText = 'ACIONAR BLITZ';
+    timerEl.innerText = '05:00'; blitzBtn.disabled = false; blitzBtn.innerText = 'ACTIVATE BLITZ';
     if (!gameState.loopRunning) { gameState.loopRunning = true; requestAnimationFrame(gameLoop); }
     startTimer();
 }
@@ -335,12 +329,10 @@ canvas.addEventListener('mousedown', (e) => {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     
-    // Semáforo (restaurado coordenadas e lógica)
     if (mx > 600 && mx < 720 && my > 80 && my < 450) {
         gameState.trafficLight = gameState.trafficLight === 'GREEN' ? 'RED' : 'GREEN'; return;
     }
 
-    // Clique na Blitz (restaurado)
     if (gameState.isBlitzActive && my > 180 && my < 260) {
         const validCars = gameState.cars.filter(c => c.lane === 0 && !c.isInspected && !c.isApprehended && (c.x + c.width) > (DIFFICULTY.blitzLineX - 450));
         if (validCars.length > 0) {
@@ -380,21 +372,18 @@ blitzBtn.addEventListener('click', () => {
             gameState.cars.forEach(c => { if (c.lane === 0 && !c.isInspected) c.isInspected = true; });
             let cTime = 20;
             const cItv = setInterval(() => {
-                cTime--; blitzBtn.innerText = `RECARGA (${cTime}s)`;
-                if (cTime <= 0) { clearInterval(cItv); gameState.blitzCooldown = false; blitzBtn.disabled = false; blitzBtn.innerText = "ACIONAR BLITZ"; }
+                cTime--; blitzBtn.innerText = `RELOAD (${cTime}s)`;
+                if (cTime <= 0) { clearInterval(cItv); gameState.blitzCooldown = false; blitzBtn.disabled = false; blitzBtn.innerText = "ACTIVATE BLITZ"; }
             }, 1000);
         }
     }, 1000);
 });
 
-// --- Desenho do Cenário (Restaurado v6) ---
 function drawBackground() {
-    // Céu/Fundo Superior
     const skyGradient = ctx.createLinearGradient(0, 0, 0, 200);
     skyGradient.addColorStop(0, "#0a0a12"); skyGradient.addColorStop(1, "#1a1a2e");
     ctx.fillStyle = skyGradient; ctx.fillRect(0, 0, 900, 200);
 
-    // Desenha Skyline (Prédios e Casas)
     gameState.skyline.forEach(el => {
         const groundY = 200;
         const y = groundY - el.h;
@@ -425,23 +414,19 @@ function drawBackground() {
     ctx.fillStyle = "rgba(0,0,0,0.1)";
     for(let i=0; i<900; i+=25) { ctx.fillRect(i, 180, 2, 20); ctx.fillRect(i, 410, 2, 50); }
 
-    // Manchas e Rachaduras
     ctx.fillStyle = "rgba(0,0,0,0.15)";
     ctx.beginPath(); ctx.ellipse(200, 280, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(750, 360, 15, 6, 0.4, 0, Math.PI * 2); ctx.fill();
 
-    // Linha de Parada Brilhante
     ctx.fillStyle = "#fff"; ctx.shadowColor = "#fff"; ctx.shadowBlur = 5;
     ctx.fillRect(DIFFICULTY.stopLineX - 5, 200, 10, 210); ctx.shadowBlur = 0;
     
-    // Semáforo
     ctx.fillStyle = "#222"; ctx.fillRect(665, 80, 40, 90);
     ctx.fillStyle = gameState.trafficLight === 'RED' ? COLORS.trafficRed : "#111";
     ctx.beginPath(); ctx.arc(685, 105, 15, 0, 7); ctx.fill();
     ctx.fillStyle = gameState.trafficLight === 'GREEN' ? COLORS.trafficGreen : "#111";
     ctx.beginPath(); ctx.arc(685, 145, 15, 0, 7); ctx.fill();
 
-    // Policiais (Sprite restaurado)
     if (gameState.isBlitzActive) {
         if (CAR_IMAGES.police.complete) {
             ctx.fillStyle = "rgba(0,0,0,0.4)";
@@ -464,7 +449,6 @@ function gameLoop() {
                 let lane = Math.floor(Math.random() * DIFFICULTY.laneCount);
                 if (canSpawn(lane)) { gameState.cars.push(new Car(lane)); }
             }
-            // FIX: Mantida ordenação para evitar overlap
             gameState.cars.sort((a, b) => b.x - a.x);
             gameState.cars = gameState.cars.filter(car => { return car.x < canvas.width + 150 && !car.update(gameState.trafficLight, gameState.isBlitzActive); });
         }

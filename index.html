@@ -1,72 +1,72 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rua Segura - Simulador de Trânsito</title>
+    <title>Safe Street - Traffic Ops</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
         <header id="hud" class="glass-panel">
             <div class="hud-item">
-                <span class="label">PONTOS</span>
+                <span class="label">SCORE</span>
                 <span id="score-value">0</span>
             </div>
             <div class="hud-item title">
-                <h1>RUA SEGURA</h1>
+                <h1>SAFE STREET</h1>
             </div>
             <div class="hud-item">
-                <span class="label">TEMPO</span>
+                <span class="label">TIME</span>
                 <span id="timer-value">05:00</span>
             </div>
             <div class="hud-item">
-                <button id="blitz-btn" class="secondary-btn">ACIONAR BLITZ</button>
+                <button id="blitz-btn" class="secondary-btn">ACTIVATE BLITZ</button>
             </div>
         </header>
 
         <canvas id="gameCanvas"></canvas>
 
         <div id="start-screen" class="glass-panel">
-            <h1 class="title-main">RUA SEGURA</h1>
-            <p>Você é um policial CET que precisa cuidar desta rua com blitz ou multando.</p>
-            <p style="color: var(--warning-color); font-size: 0.8rem; margin-top: 10px;">Atenção: Para o jogo funcionar corretamente, é necessário apertar as teclas <b>Control + F5</b> para limpar o cache.</p>
-            <button id="start-btn" class="primary-btn">Começar</button>
+            <h1 class="title-main">SAFE STREET</h1>
+            <p>You are a traffic officer. Manage the street using the traffic light and blitz points!</p>
+            <p style="color: var(--warning-color); font-size: 0.8rem; margin-top: 10px;">Tip: Press <b>Control + F5</b> to refresh cache if needed.</p>
+            <button id="start-btn" class="primary-btn">Start Game</button>
         </div>
 
         <div id="document-inspection" class="hidden glass-panel">
-            <div class="cnh-header">CARTEIRA NACIONAL DE HABILITAÇÃO</div>
+            <div class="cnh-header">DRIVER'S LICENSE INSPECTION</div>
             <div class="cnh-body">
                 <div class="details">
-                    <p><strong>NOME DO MOTORISTA:</strong> <span id="cnh-name">---</span></p>
-                    <p><strong>IDADE:</strong> <span id="cnh-age">---</span></p>
-                    <p><strong>PLACA DO VEÍCULO:</strong> <span id="cnh-plate">---</span></p>
+                    <p><strong>DRIVER NAME:</strong> <span id="cnh-name">---</span></p>
+                    <p><strong>AGE:</strong> <span id="cnh-age">---</span></p>
+                    <p><strong>LICENSE PLATE:</strong> <span id="cnh-plate">---</span></p>
                     <hr>
-                    <p><strong>STATUS DA CNH:</strong> <span id="cnh-status">---</span></p>
-                    <p><strong>PONTUALIDADE:</strong> <span id="cnh-points">0</span></p>
-                    <p><strong>USO DE CELULAR:</strong> <span id="cnh-phone">---</span></p>
+                    <p><strong>LICENSE STATUS:</strong> <span id="cnh-status">---</span></p>
+                    <p><strong>LICENSE POINTS:</strong> <span id="cnh-points">0</span></p>
+                    <p><strong>PHONE USAGE:</strong> <span id="cnh-phone">---</span></p>
                 </div>
                 <div class="actions">
-                    <button id="inspect-fine-btn" class="primary-btn danger">APREENDER VEÍCULO</button>
-                    <button id="inspect-release-btn" class="primary-btn success">LIBERAR</button>
+                    <button id="inspect-fine-btn" class="primary-btn danger">IMPOUND VEHICLE</button>
+                    <button id="inspect-release-btn" class="primary-btn success">RELEASE</button>
                 </div>
             </div>
         </div>
 
         <div id="game-over-screen" class="hidden glass-panel">
-            <h2>Fim de Turno!</h2>
-            <p>Sua pontuação final: <span id="final-score">0</span></p>
-            <button id="restart-btn" class="primary-btn">Reiniciar Patrulha</button>
+            <h2>Shift Over!</h2>
+            <p>Your final score: <span id="final-score">0</span></p>
+            <button id="restart-btn" class="primary-btn">Restart Patrol</button>
         </div>
 
         <div id="fail-screen" class="hidden glass-panel">
-            <h2 style="color: var(--danger-color);">PATRULHA ENCERRADA!</h2>
-            <p>Um motorista usando celular escapou da sua fiscalização.</p>
-            <button id="fail-restart-btn" class="primary-btn">Tentar Novamente</button>
+            <h2 style="color: var(--danger-color);">PATROL ENDED!</h2>
+            <p>A driver using a phone escaped your inspection.</p>
+            <button id="fail-restart-btn" class="primary-btn">Try Again</button>
         </div>
 
         <div id="controls-hint" class="glass-panel">
-            <p>🚦 Clique no semáforo para alternar<br>🚗 Clique em carros infratores (Avanço de sinal ou Celular) para multar</p>
+            <p>🚦 Click the traffic light to toggle<br>🚗 Click offending cars (Red light or Phone) to fine them</p>
         </div>
     </div>
     <script src="script.js"></script>

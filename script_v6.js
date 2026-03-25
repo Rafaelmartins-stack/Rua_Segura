@@ -68,11 +68,13 @@ let gameState = {
 const CAR_IMAGES = {
     red_sedan: new Image(),
     green_sedan: new Image(),
-    van: new Image()
+    van: new Image(),
+    police: new Image()
 };
 CAR_IMAGES.red_sedan.src = 'assets/car_red_sedan.png';
 CAR_IMAGES.green_sedan.src = 'assets/car_green_sedan.png';
 CAR_IMAGES.van.src = 'assets/car_van.png';
+CAR_IMAGES.police.src = 'PM.png';
 
 const COLORS = {
     road: '#2c3e50',
@@ -204,8 +206,8 @@ class Car {
         // Inspeção Blitz (Garantir que apareça para o primeiro da fila)
         if (gameState.isBlitzActive && this.lane === 0 && !this.isInspected && !this.isApprehended) {
              const carAhead = gameState.cars.find(c => c.lane === 0 && c.x > this.x && !c.isInspected && !c.isApprehended);
-             // Se não tiver ninguém na frente, sou o primeiro. Desenha o balão se estiver perto o suficiente E NÃO PASSOU DA LINHA.
-             if (!carAhead && (this.x + this.width) > DIFFICULTY.blitzLineX - 350 && (this.x + this.width) < DIFFICULTY.blitzLineX + 50) {
+             // Se não tiver ninguém na frente, sou o primeiro. Desenha o balão se estiver perto o suficiente.
+             if (!carAhead && (this.x + this.width) > DIFFICULTY.blitzLineX - 350) {
                  ctx.fillStyle = "#fff";
                  ctx.fillRect(this.x + 30, this.y - 45, 80, 25);
                  ctx.fillStyle = "#222";
@@ -421,12 +423,6 @@ canvas.addEventListener('mousedown', (e) => {
 
 blitzBtn.addEventListener('click', () => {
     if (gameState.isBlitzActive || gameState.blitzCooldown) return;
-    
-    // Marca como "inspecionado" (ignora) qualquer carro que já passou da linha da blitz
-    gameState.cars.forEach(c => {
-        if (c.x > DIFFICULTY.blitzLineX) c.isInspected = true;
-    });
-
     gameState.isBlitzActive = true;
     blitzBtn.disabled = true;
     let bt = 20;
@@ -533,8 +529,13 @@ function drawBackground() {
 
     // Policiais
     if (gameState.isBlitzActive) {
-        ctx.fillStyle = COLORS.police; ctx.fillRect(525, 175, 20, 30);
-        ctx.fillStyle = COLORS.police; ctx.fillRect(525, 410, 20, 30);
+        if (CAR_IMAGES.police.complete) {
+            ctx.drawImage(CAR_IMAGES.police, 515, 145, 30, 60); 
+            ctx.drawImage(CAR_IMAGES.police, 515, 405, 30, 60); 
+        } else {
+            ctx.fillStyle = COLORS.police; ctx.fillRect(525, 175, 20, 30);
+            ctx.fillStyle = COLORS.police; ctx.fillRect(525, 410, 20, 30);
+        }
     }
 }
 

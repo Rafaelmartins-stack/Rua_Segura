@@ -180,16 +180,17 @@ class Car {
             ctx.fillRect(this.x + 81, this.y + 21, 4, 3);
         }
 
-        // Bubble Blitz
+        // Inspeção Blitz (Garantir que apareça para o primeiro da fila)
         if (gameState.isBlitzActive && this.lane === 0 && !this.isInspected && !this.isApprehended) {
-            const ahead = gameState.cars.find(c => c.lane === 0 && c.x > this.x && !c.isInspected && !c.isApprehended);
-            if (!ahead && (this.x + this.width) > DIFFICULTY.blitzLineX - 200) {
-                ctx.fillStyle = "#fff";
-                ctx.fillRect(this.x + 30, this.y - 45, 80, 25);
-                ctx.fillStyle = "#222";
-                ctx.font = "bold 10px Arial";
-                ctx.fillText("VER DOCS", this.x + 38, this.y - 28);
-            }
+             const carAhead = gameState.cars.find(c => c.lane === 0 && c.x > this.x && !c.isInspected && !c.isApprehended);
+             // Se não tiver ninguém na frente, sou o primeiro. Desenha o balão se estiver perto o suficiente.
+             if (!carAhead && (this.x + this.width) > DIFFICULTY.blitzLineX - 350) {
+                 ctx.fillStyle = "#fff";
+                 ctx.fillRect(this.x + 30, this.y - 45, 80, 25);
+                 ctx.fillStyle = "#222";
+                 ctx.font = "bold 10px Arial";
+                 ctx.fillText("CLIQUE AQUI", this.x + 35, this.y - 28);
+             }
         }
         
         if (this.isFined) {
@@ -316,12 +317,16 @@ canvas.addEventListener('mousedown', (e) => {
     }
 
     // Carros
+    // Força o clique no primeiro carro da fila da Blitz se clicar em qualquer lugar da faixa 0 durante a Blitz
+    if (gameState.isBlitzActive && my > 200 && my < 250) {
+        const headCar = gameState.cars
+            .filter(c => c.lane === 0 && !c.isInspected && !c.isApprehended && (c.x + c.width) > (DIFFICULTY.blitzLineX - 400))
+            .sort((a,b) => b.x - a.x)[0];
+        if (headCar) { openInspection(headCar); return; }
+    }
+
     for (const car of gameState.cars) {
         if (mx > car.x && mx < car.x + car.width && my > car.y && my < car.y + car.height) {
-            if (gameState.isBlitzActive && car.lane === 0 && !car.isInspected && !car.isApprehended) {
-                const ahead = gameState.cars.find(c => c.lane === 0 && c.x > car.x && !c.isInspected && !c.isApprehended);
-                if (!ahead) { openInspection(car); return; }
-            }
             if (!car.isFined && !car.isApprehended) {
                 if (car.hasPhoneInfraction) { gameState.score += 100; addFeedback("+100 CELULAR", mx, my, COLORS.trafficGreen); }
                 else { gameState.score -= 50; addFeedback("-50 LIMPO", mx, my, COLORS.trafficRed); }

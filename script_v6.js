@@ -65,12 +65,10 @@ let gameState = {
 
 // --- Assets ---
 const CAR_IMAGES = {
-    sports: new Image(),
     red_sedan: new Image(),
     green_sedan: new Image(),
     van: new Image()
 };
-CAR_IMAGES.sports.src = 'assets/car_sports.png';
 CAR_IMAGES.red_sedan.src = 'assets/car_red_sedan.png';
 CAR_IMAGES.green_sedan.src = 'assets/car_green_sedan.png';
 CAR_IMAGES.van.src = 'assets/car_van.png';
@@ -182,9 +180,9 @@ class Car {
         // Desenha Sprite Pixel Art (Alguns precisam ser invertidos para virar para a Direita)
         ctx.imageSmoothingEnabled = false; 
         
-        // Se o sprite original estiver virado para a ESQUERDA (Esportivo e Sedã Vermelho), inverte.
+        // Se o sprite original estiver virado para a ESQUERDA (Sedã Vermelho), inverte.
         // Se já estiver para a DIREITA (Sedã Verde e Van novos), desenha normal.
-        if (this.sprite === CAR_IMAGES.sports || this.sprite === CAR_IMAGES.red_sedan) {
+        if (this.sprite === CAR_IMAGES.red_sedan) {
             ctx.save();
             ctx.translate(this.x + this.width, this.y);
             ctx.scale(-1, 1);
@@ -406,6 +404,17 @@ failRestartBtn.onclick = resetGame;
 function drawBackground() {
     ctx.fillStyle = "#34495e"; ctx.fillRect(0, 180, 900, 240);
     ctx.fillStyle = COLORS.road; ctx.fillRect(0, 200, 900, 210);
+    
+    // Detalhes da Rua (Rachaduras e Bueiros)
+    ctx.strokeStyle = "rgba(0,0,0,0.2)"; ctx.lineWidth = 1;
+    // Rachadura 1
+    ctx.beginPath(); ctx.moveTo(100, 220); ctx.lineTo(120, 230); ctx.lineTo(115, 240); ctx.stroke();
+    // Rachadura 2
+    ctx.beginPath(); ctx.moveTo(400, 350); ctx.lineTo(430, 365); ctx.lineTo(420, 380); ctx.stroke();
+    // Bueiro
+    ctx.fillStyle = "#1a252f"; ctx.beginPath(); ctx.arc(250, 320, 15, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#111"; ctx.stroke();
+    
     ctx.fillStyle = "rgba(255,255,255,0.3)";
     for(let i=1; i<4; i++) { ctx.fillRect(0, 200 + i*50, 900, 2); }
     ctx.fillStyle = "#fff"; ctx.fillRect(DIFFICULTY.stopLineX - 5, 200, 10, 210);

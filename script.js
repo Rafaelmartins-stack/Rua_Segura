@@ -30,17 +30,17 @@ const blitzBtn = document.getElementById('blitz-btn');
 
 // --- Configurações ---
 const DIFFICULTY = {
-    carSpawnRate: 0.02,       // Aumentado para 4 faixas
+    carSpawnRate: 0.025,       // Aumentado para mais tráfego
     minCarSpeed: 2.2,           
     maxCarSpeed: 4.5,           
     phoneInfractionRate: 0.3, 
     redLightInfractionRate: 0.3, 
-    gameDurationSeconds: 120, 
+    gameDurationSeconds: 300,  // 5 Minutos
     stopLineX: 650,           
     blitzLineX: 450,          
     safeDistance: 140,        
     minimumGap: 35,           
-    laneCount: 4,             // 4 faixas agora
+    laneCount: 4,             
 };
 
 const NAMES = ["José", "Maria", "João", "Ana", "Carlos", "Francisca", "Paulo", "Antônia", "Lucas", "Adriana", "Pedro", "Juliana"];
@@ -257,7 +257,7 @@ function resetGame() {
     gameState.score = 0; gameState.timeLeft = DIFFICULTY.gameDurationSeconds; gameState.isGameOver = false; gameState.isBlitzActive = false;
     gameState.blitzCooldown = false; gameState.isPaused = false; gameState.cars = []; gameState.trafficLight = 'GREEN'; scoreEl.innerText = '0';
     gameOverScreen.classList.add('hidden'); failScreen.classList.add('hidden'); inspectionScreen.classList.add('hidden');
-    timerEl.innerText = '02:00'; blitzBtn.disabled = false; blitzBtn.innerText = 'ACIONAR BLITZ';
+    timerEl.innerText = '05:00'; blitzBtn.disabled = false; blitzBtn.innerText = 'ACIONAR BLITZ';
     if (!gameState.loopRunning) { gameState.loopRunning = true; requestAnimationFrame(gameLoop); }
     startTimer();
 }
@@ -313,7 +313,7 @@ failRestartBtn.addEventListener('click', resetGame);
 blitzBtn.addEventListener('click', () => {
     if (gameState.isBlitzActive || gameState.blitzCooldown || !gameState.hasStarted) return;
     gameState.isBlitzActive = true; blitzBtn.disabled = true;
-    let bTime = 10;
+    let bTime = 20; // Aumentado para 20 segundos
     const bItv = setInterval(() => {
         bTime--; blitzBtn.innerText = `BLITZ (${bTime}s)`;
         if (bTime <= 0) {

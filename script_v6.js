@@ -179,14 +179,20 @@ class Car {
         ctx.fillStyle = "rgba(0,0,0,0.3)";
         ctx.fillRect(this.x + 5, this.y + 10, this.width - 10, this.height - 10);
         
-        // Desenha Sprite Pixel Art Invertido (Para virar para a Direita)
+        // Desenha Sprite Pixel Art (Alguns precisam ser invertidos para virar para a Direita)
         ctx.imageSmoothingEnabled = false; 
-        ctx.save();
-        // Inverte horizontalmente: translada para o ponto X final do carro, escala -1
-        ctx.translate(this.x + this.width, this.y);
-        ctx.scale(-1, 1);
-        ctx.drawImage(this.sprite, 0, 0, this.width, this.height);
-        ctx.restore();
+        
+        // Se o sprite original estiver virado para a ESQUERDA (Esportivo e Sedã Vermelho), inverte.
+        // Se já estiver para a DIREITA (Sedã Verde e Van novos), desenha normal.
+        if (this.sprite === CAR_IMAGES.sports || this.sprite === CAR_IMAGES.red_sedan) {
+            ctx.save();
+            ctx.translate(this.x + this.width, this.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(this.sprite, 0, 0, this.width, this.height);
+            ctx.restore();
+        } else {
+            ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
+        }
         
         // Celular (Ícone flutuante sobre o carro)
         if (this.hasPhoneInfraction) {

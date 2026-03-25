@@ -39,7 +39,7 @@ const DIFFICULTY = {
     stopLineX: 650,
     blitzLineX: 450,
     safeDistance: 140,
-    minimumGap: 35,
+    minimumGap: 45,
     laneCount: 4,
 };
 
@@ -129,7 +129,7 @@ class Car {
 
         const frontX = this.x + this.width;
         const carAhead = gameState.cars
-            .filter(c => c !== this && Math.abs(c.y - this.y) < 30 && c.x > this.x)
+            .filter(c => c !== this && Math.abs(c.y - this.y) < 45 && c.x > this.x)
             .sort((a, b) => a.x - b.x)[0];
 
         let targetSpeed = this.baseSpeed;
@@ -153,7 +153,7 @@ class Car {
             }
         }
 
-        if (this.speed > targetSpeed) { this.speed = Math.max(targetSpeed, this.speed - 0.4); }
+        if (this.speed > targetSpeed) { this.speed = Math.max(targetSpeed, this.speed - 0.5); }
         else if (this.speed < targetSpeed) { this.speed = Math.min(targetSpeed, this.speed + 0.2); }
 
         let nextX = this.x + this.speed;
@@ -362,6 +362,8 @@ function gameLoop() {
                 let lane = Math.floor(Math.random() * DIFFICULTY.laneCount);
                 if (canSpawn(lane)) { gameState.cars.push(new Car(lane)); }
             }
+            // Ordenar por X descendente para garantir que o carro da frente atualize antes do de trás
+            gameState.cars.sort((a, b) => b.x - a.x);
             gameState.cars = gameState.cars.filter(car => { return car.y > -150 && !car.update(gameState.trafficLight, gameState.isBlitzActive); });
         }
         drawBackground();

@@ -16,14 +16,15 @@ const startBtn = document.getElementById('start-btn');
 
 // --- Configurações de Dificuldade ---
 const DIFFICULTY = {
-    carSpawnRate: 0.01,       // Reduzido para menos tráfego e menos bugs
+    carSpawnRate: 0.012,       
     minCarSpeed: 2,           
     maxCarSpeed: 4,           
     phoneInfractionRate: 0.3, 
+    redLightInfractionRate: 0.15, // 15% de chance de ignorar o sinal vermelho
     gameDurationSeconds: 120, 
     stopLineX: 620,           
-    safeDistance: 150,        // Aumentado para mais espaço entre carros
-    minimumGap: 40,           // Espaço mínimo obrigatório entre parachoques
+    safeDistance: 150,        
+    minimumGap: 40,           
 };
 
 // --- Estado do Jogo ---
@@ -63,7 +64,7 @@ class Car {
         this.height = 55;
         this.x = -this.width - 50; 
         this.lane = lane;
-        this.y = 250 + (this.lane === 0 ? -53 : 53); // Ajuste fino para não tocar na linha central
+        this.y = 250 + (this.lane === 0 ? -53 : 53); 
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
         
@@ -72,13 +73,14 @@ class Car {
         this.darkColor = colorSet.dark;
         
         this.hasPhoneInfraction = Math.random() < DIFFICULTY.phoneInfractionRate;
+        this.willIgnoreRedLight = Math.random() < DIFFICULTY.redLightInfractionRate;
         this.committedRedLightInfraction = false;
+        this.hasBeenPenalized = false; // Penalidade automática de -25 pontos
         this.isFined = false;
         this.wasWronglyFined = false;
     }
 
     update(trafficLight, stopLineX, carsInLane) {
-        // Encontrar o carro imediatamente à frente (menor X entre os que estão maiores que o meu)
         const carAhead = carsInLane
             .filter(c => c !== this && c.x > this.x)
             .sort((a, b) => a.x - b.x)[0];
@@ -86,30 +88,29 @@ class Car {
         let targetSpeed = this.baseSpeed;
         const frontX = this.x + this.width;
 
-        // 1. Semáforo
-        if (trafficLight === 'RED' && frontX < stopLineX - 10 && frontX > stopLineX - 250) {
-            targetSpeed = 0;
+        // 1. Semáforo (Ignora se for "rebelde")
+        if (!this.willIgnoreRedLight) {
+            if (trafficLight === 'RED' && frontX < stopLineX - 10 && frontX > stopLineX - 250) {
+                targetSpeed = 0;
+            }
         }
 
-        // 2. Colisão / Distância de Segurança
+        // 2. Colisão / Distância de Segurança (Nunca ignora colisão!)
         if (carAhead) {
             const distance = carAhead.x - frontX;
-            
             if (distance < DIFFICULTY.minimumGap) {
                 targetSpeed = 0;
-                // Correção de posição se houver sobreposição detectada
                 if (distance < 5) {
                     this.x = carAhead.x - this.width - DIFFICULTY.minimumGap;
                     this.speed = 0;
                 }
             } else if (distance < DIFFICULTY.safeDistance) {
-                // Redução gradual baseada na distância
                 const factor = (distance - DIFFICULTY.minimumGap) / (DIFFICULTY.safeDistance - DIFFICULTY.minimumGap);
                 targetSpeed = Math.min(targetSpeed, carAhead.speed * factor + 0.2);
             }
         }
 
-        // Aceleração/Desaceleração suave
+        // Aceleração suave
         if (this.speed > targetSpeed) {
             this.speed = Math.max(targetSpeed, this.speed - 0.2);
         } else if (this.speed < targetSpeed) {
@@ -117,8 +118,16 @@ class Car {
         }
 
         // 3. Detecção de Infração de Sinal
-        if (trafficLight === 'RED' && frontX > stopLineX && this.x < stopLineX + 30 && this.speed > 0.3) {
+        if (trafficLight === 'RED' && frontX > stopLineX && this.x < stopLineX + 30) {
             this.committedRedLightInfraction = true;
+            
+            // Penalidade automática de -25 pontos por permitir a infração
+            if (!this.hasBeenPenalized) {
+                gameState.score -= 25;
+                this.hasBeenPenalized = true;
+                addFeedback('-25 INFRAÇÃO!', this.x + this.width/2, this.y, '#ff9f43');
+                scoreEl.innerText = gameState.score;
+            }
         }
 
         this.x += this.speed;
@@ -160,7 +169,7 @@ class Car {
         ctx.fillRect(this.x, this.y + 8, 3, 12);
         ctx.fillRect(this.x, this.y + this.height - 20, 3, 12);
 
-        // Rodas Horizontais
+        // Rodas (Estáticas horizontais)
         this.drawWheel(ctx, this.x + 20, this.y - 3);
         this.drawWheel(ctx, this.x + 20, this.y + this.height - 5);
         this.drawWheel(ctx, this.x + 80, this.y - 3);
@@ -173,6 +182,13 @@ class Car {
             ctx.fill();
             ctx.fillStyle = this.isFined ? COLORS.trafficGreen : '#3498db';
             ctx.fillRect(this.x + 83, this.y + 22, 6, 10);
+        }
+
+        // Efeito Visual para Infratores de Sinal (Borda laranja suave antes de multar)
+        if (this.hasBeenPenalized && !this.isFined) {
+            ctx.strokeStyle = '#ff9f43';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(this.x - 2, this.y - 2, this.width + 4, this.height + 4);
         }
 
         // Feedback Multa
@@ -248,12 +264,11 @@ function endGame() {
 
 function addFeedback(text, x, y, color) {
     gameState.feedbackMessages.push({
-        text, x, y, color, opacity: 1, timer: 60, scale: 1
+        text, x, y, color, opacity: 1, timer: 65, scale: 1
     });
 }
 
 function canSpawn(lane) {
-    // Aumentada a margem de segurança para o spawn
     return !gameState.cars.some(car => car.lane === lane && car.x < 180);
 }
 
@@ -291,9 +306,7 @@ canvas.addEventListener('mousedown', (e) => {
 });
 
 startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', () => {
-    resetGame();
-});
+restartBtn.addEventListener('click', resetGame);
 
 // --- Loop ---
 
@@ -364,10 +377,8 @@ function gameLoop() {
 
         drawBackground();
 
-        // Limpar carros fora da tela
         gameState.cars = gameState.cars.filter(car => car.x < canvas.width + 200);
         
-        // Loop de atualização
         for (let car of gameState.cars) {
             const laneCars = gameState.cars.filter(c => c.lane === car.lane);
             car.update(gameState.trafficLight, DIFFICULTY.stopLineX, laneCars);
@@ -379,7 +390,7 @@ function gameLoop() {
             let msg = gameState.feedbackMessages[i];
             ctx.fillStyle = msg.color;
             ctx.globalAlpha = msg.opacity;
-            ctx.font = `bold ${24 * msg.scale}px 'Segoe UI'`;
+            ctx.font = `bold ${22 * msg.scale}px 'Segoe UI'`;
             ctx.fillText(msg.text, msg.x, msg.y);
             msg.y -= 1.2;
             msg.timer--;

@@ -146,9 +146,10 @@ class Car {
         }
 
         if (isBlitzActive && !this.isInspected && this.lane === 0) {
-            if (frontX < DIFFICULTY.blitzLineX && frontX > DIFFICULTY.blitzLineX - 450) {
+            // Avança até a linha da blitz (perto do policial)
+            if (frontX >= DIFFICULTY.blitzLineX - 5) {
                 targetSpeed = 0;
-                if (frontX > DIFFICULTY.blitzLineX - 5) this.speed = 0;
+                if (frontX >= DIFFICULTY.blitzLineX) this.speed = 0;
             }
         }
 
@@ -161,7 +162,7 @@ class Car {
         }
 
         if (this.speed > targetSpeed) { this.speed = Math.max(targetSpeed, this.speed - 0.7); }
-        else if (this.speed < targetSpeed) { this.speed = Math.min(targetSpeed, this.speed + 0.2); }
+        else if (this.speed < targetSpeed) { this.speed = Math.min(targetSpeed, this.speed + 0.3); }
 
         let nextX = this.x + this.speed;
         if (carAhead) {

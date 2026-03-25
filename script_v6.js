@@ -96,8 +96,8 @@ class Car {
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
         
-        // Atribui sprite aleatório
-        const keys = Object.keys(CAR_IMAGES);
+        // Atribui sprite aleatório (exceto o polcial)
+        const keys = Object.keys(CAR_IMAGES).filter(k => k !== 'police');
         this.sprite = CAR_IMAGES[keys[Math.floor(Math.random() * keys.length)]];
         
         // Dados
@@ -530,6 +530,16 @@ function drawBackground() {
     // Policiais
     if (gameState.isBlitzActive) {
         if (CAR_IMAGES.police.complete) {
+            // Sombras nos pés
+            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ctx.beginPath();
+            ctx.ellipse(530, 203, 12, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(530, 463, 12, 5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sprites
             ctx.drawImage(CAR_IMAGES.police, 515, 145, 30, 60); 
             ctx.drawImage(CAR_IMAGES.police, 515, 405, 30, 60); 
         } else {

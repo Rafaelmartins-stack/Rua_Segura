@@ -145,15 +145,18 @@ class Car {
         // Colisão Inteligente (MÁXIMA PRECISÃO)
         const carAhead = gameState.cars.find(c => {
             if (c === this) return false;
-            if (c.lane !== this.lane) return false; // Somente na mesma pista
+            if (c.x < this.x) return false; // Ignora carros atrás
+            const yDist = Math.abs(c.y - this.y);
             const horizontalGap = c.x - (this.x + this.width);
-            return horizontalGap > -this.width && horizontalGap < 120; // Detecta carros até 120px à frente
+            
+            // Detecta carros na mesma pista ou em transição (Y próximo)
+            return yDist < 40 && horizontalGap > -this.width * 0.5 && horizontalGap < 150;
         });
 
         if (carAhead) {
             const gap = carAhead.x - (this.x + this.width);
-            if (gap < 40) targetSpeed = 0; // Para com margem de segurança
-            else targetSpeed = Math.min(targetSpeed, carAhead.speed * 0.9);
+            if (gap < 40) targetSpeed = 0; // Para antes de bater
+            else targetSpeed = Math.min(targetSpeed, carAhead.speed * 1.1); // Iguala velocidade suavemente
         }
 
         if (this.speed > targetSpeed) this.speed = Math.max(targetSpeed, this.speed - 0.2);
@@ -407,7 +410,8 @@ canvas.addEventListener('mousedown', (e) => {
     }
 
     for (const car of gameState.cars) {
-        if (mx > car.x && mx < car.x + car.width && my > car.y && my < car.y + car.height) {
+        // Hitbox de clique ajustada para o centro do carro
+        if (mx > car.x - 10 && mx < car.x + car.width + 10 && my > car.y - 10 && my < car.y + car.height + 10) {
             if (!car.isFined && !car.isApprehended) {
                 if (car.hasPhoneInfraction) { gameState.score += 100; addFeedback("+100 CELULAR", mx, my, COLORS.trafficGreen); }
                 else { gameState.score -= 50; addFeedback("-50 LIMPO", mx, my, COLORS.trafficRed); }

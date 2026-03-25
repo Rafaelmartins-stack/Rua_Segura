@@ -135,18 +135,20 @@ class Car {
             }
         }
 
-        // Colisão Robusta (Considera proximidade vertical para fusão de faixas)
+        // Colisão Inteligente (Impede overlap total)
         const carAhead = gameState.cars.find(c => {
-            return c !== this && 
-                   c.x > this.x && 
-                   Math.abs(c.y - this.y) < 35 && // Se estiverem próximos verticalmente
-                   (c.x - (this.x + this.width)) < 130; // Distância de segurança
+            if (c === this) return false;
+            const horizontalGap = c.x - (this.x + this.width);
+            const verticalDist = Math.abs(c.y - this.y);
+            
+            // Se estiver na frente (ou ocupando quase o mesmo espaço X) e na mesma "pista"
+            return (c.x > this.x - 20) && verticalDist < 35 && horizontalGap < 100;
         });
 
         if (carAhead) {
             const gap = carAhead.x - (this.x + this.width);
-            if (gap < 30) targetSpeed = 0; // Travado se estiver muito perto
-            else targetSpeed = Math.min(targetSpeed, carAhead.speed * (gap / 130)); // Desacelera proporcionalmente
+            if (gap < 25) targetSpeed = 0; // Para se estiver quase tocando
+            else targetSpeed = Math.min(targetSpeed, carAhead.speed * 0.8); // Reduz velocidade
         }
 
         if (this.speed > targetSpeed) this.speed = Math.max(targetSpeed, this.speed - 0.2);
@@ -323,12 +325,27 @@ canvas.addEventListener('mousedown', (e) => {
     }
 
     // Carros
-    // Força o clique no primeiro carro da fila da Blitz se clicar em qualquer lugar da faixa 0 durante a Blitz
-    if (gameState.isBlitzActive && my > 200 && my < 250) {
-        const headCar = gameState.cars
-            .filter(c => c.lane === 0 && !c.isInspected && !c.isApprehended && (c.x + c.width) > (DIFFICULTY.blitzLineX - 400))
-            .sort((a,b) => b.x - a.x)[0];
-        if (headCar) { openInspection(headCar); return; }
+    // Força o clique no primeiro carro da fila da Blitz
+    if (gameState.isBlitzActive && my > 180 && my < 260) {
+        // Encontra o carro mais à frente na faixa 0 que ainda não foi processado
+        const validCars = gameState.cars.filter(c => 
+            c.lane === 0 && 
+            !c.isInspected && 
+            !c.isApprehended && 
+            (c.x + c.width) > (DIFFICULTY.blitzLineX - 450)
+        );
+        
+        if (validCars.length > 0) {
+            // Ordena pelo X (mais à frente primeiro)
+            validCars.sort((a,b) => b.x - a.x);
+            const headCar = validCars[0];
+            
+            // Só abre se o clique do mouse (mx) estiver próximo a esse carro específico
+            if (mx > headCar.x - 50 && mx < headCar.x + headCar.width + 50) {
+                openInspection(headCar);
+                return;
+            }
+        }
     }
 
     for (const car of gameState.cars) {

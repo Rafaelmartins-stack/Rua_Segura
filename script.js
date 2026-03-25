@@ -13,10 +13,12 @@ const startScreen = document.getElementById('start-screen');
 const failScreen = document.getElementById('fail-screen');
 const inspectionScreen = document.getElementById('document-inspection');
 
-// Campos da CNH/Doc no Modal
+// Modal Fields
+const cnhName = document.getElementById('cnh-name');
+const cnhAge = document.getElementById('cnh-age');
+const cnhPlate = document.getElementById('cnh-plate');
+const cnhStatus = document.getElementById('cnh-status');
 const cnhPoints = document.getElementById('cnh-points');
-const cnhFines = document.getElementById('cnh-fines');
-const cnhIpva = document.getElementById('cnh-ipva');
 const inspectFineBtn = document.getElementById('inspect-fine-btn');
 const inspectReleaseBtn = document.getElementById('inspect-release-btn');
 
@@ -26,7 +28,7 @@ const failRestartBtn = document.getElementById('fail-restart-btn');
 const startBtn = document.getElementById('start-btn');
 const blitzBtn = document.getElementById('blitz-btn');
 
-// --- Configurações de Dificuldade ---
+// --- Configurações ---
 const DIFFICULTY = {
     carSpawnRate: 0.012,       
     minCarSpeed: 2.2,           
@@ -35,10 +37,13 @@ const DIFFICULTY = {
     redLightInfractionRate: 0.3, 
     gameDurationSeconds: 120, 
     stopLineX: 620,           
-    blitzLineX: 500,          
+    blitzLineX: 520,          
     safeDistance: 160,        
     minimumGap: 40,           
 };
+
+const NAMES = ["José", "Maria", "João", "Ana", "Carlos", "Francisca", "Paulo", "Antônia", "Lucas", "Adriana", "Pedro", "Juliana"];
+const SURNAMES = ["Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes"];
 
 // --- Estado do Jogo ---
 let gameState = {
@@ -46,7 +51,7 @@ let gameState = {
     timeLeft: DIFFICULTY.gameDurationSeconds,
     isGameOver: false,
     hasStarted: false,
-    isPaused: false, // Pausado durante inspeção
+    isPaused: false, 
     trafficLight: 'GREEN', 
     isBlitzActive: false,
     currentLicenseCar: null, 
@@ -54,7 +59,7 @@ let gameState = {
     feedbackMessages: [], 
 };
 
-// --- Estética ---
+// --- Cores ---
 const COLORS = {
     road: '#2c3e50',
     line: '#ecf0f1',
@@ -79,6 +84,7 @@ class Car {
         this.height = 55;
         this.x = -this.width - 60; 
         this.lane = lane;
+        this.targetLane = lane;
         this.y = 250 + (this.lane === 0 ? -55 : 55); 
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
@@ -86,16 +92,15 @@ class Car {
         this.color = colorSet.main;
         this.darkColor = colorSet.dark;
         
+        // Random driver data
+        this.name = NAMES[Math.floor(Math.random() * NAMES.length)] + " " + SURNAMES[Math.floor(Math.random() * SURNAMES.length)];
+        this.age = Math.floor(Math.random() * 60) + 14; 
+        this.plate = this.generatePlate();
+        this.hasLicense = Math.random() < 0.85; 
+        this.licensePoints = Math.floor(Math.random() * 50);
+
         this.hasPhoneInfraction = Math.random() < DIFFICULTY.phoneInfractionRate;
         this.willIgnoreRedLight = Math.random() < DIFFICULTY.redLightInfractionRate;
-        
-        // Dados da Blitz
-        this.license = {
-            points: Math.floor(Math.random() * 50),
-            hasFines: Math.random() < 0.2, 
-            docRegular: Math.random() < 0.8, 
-        };
-        this.license.isIrregular = this.license.points >= 40 || this.license.hasFines || !this.license.docRegular;
 
         this.committedRedLightInfraction = false;
         this.hasBeenPenalized = false; 
@@ -103,14 +108,40 @@ class Car {
         this.wasWronglyFined = false;
         this.isInspected = false; 
         this.documentsRequested = false; 
+        this.isApprehended = false; 
+    }
+
+    generatePlate() {
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const nums = "0123456789";
+        return letters[Math.floor(Math.random()*26)] + letters[Math.floor(Math.random()*26)] + letters[Math.floor(Math.random()*26)] + 
+               nums[Math.floor(Math.random()*10)] + letters[Math.floor(Math.random()*26)] + nums[Math.floor(Math.random()*10)] + nums[Math.floor(Math.random()*10)];
     }
 
     update(trafficLight, stopLineX, carsInLane, isBlitzActive) {
         if (gameState.isPaused) return false;
 
-        const carAhead = carsInLane
+        // Funil de Trânsito na Blitz
+        if (isBlitzActive && !this.isInspected && this.x < DIFFICULTY.blitzLineX) {
+            this.targetLane = 0; 
+        }
+
+        const targetY = 250 + (this.targetLane === 0 ? -55 : 55);
+        if (Math.abs(this.y - targetY) > 1) {
+            this.y += (targetY - this.y) * 0.05;
+        }
+
+        if (this.isApprehended) {
+            this.y -= 3.5;
+            this.x += 1;
+            return false;
+        }
+
+        const currentLaneCars = gameState.cars.filter(c => c.targetLane === this.targetLane);
+        const carAhead = currentLaneCars
             .filter(c => c !== this && c.x > this.x)
             .sort((a, b) => a.x - b.x)[0];
+        
         let targetSpeed = this.baseSpeed;
         const frontX = this.x + this.width;
 
@@ -118,11 +149,11 @@ class Car {
             if (trafficLight === 'RED' && frontX < stopLineX - 10 && frontX > stopLineX - 300) targetSpeed = 0;
         }
 
-        // Parar na Blitz
+        // Parar na Blitz (Fila única)
         if (isBlitzActive && !this.isInspected) {
-            if (frontX < DIFFICULTY.blitzLineX && frontX > DIFFICULTY.blitzLineX - 250) {
+            if (frontX < DIFFICULTY.blitzLineX && frontX > DIFFICULTY.blitzLineX - 400) {
                 targetSpeed = 0;
-                if (frontX > DIFFICULTY.blitzLineX - 10) this.speed = 0;
+                if (frontX > DIFFICULTY.blitzLineX - 15) this.speed = 0;
             }
         }
 
@@ -153,7 +184,10 @@ class Car {
                 scoreEl.innerText = gameState.score;
             }
         }
-        if (this.x > canvas.width && this.hasPhoneInfraction && !this.isFined) { showFailScreen(); return true; }
+
+        if (this.x > canvas.width && this.hasPhoneInfraction && !this.isFined) { 
+            showFailScreen(); return true; 
+        }
         return false;
     }
 
@@ -180,8 +214,7 @@ class Car {
             ctx.lineWidth = 4; ctx.setLineDash([6, 4]); ctx.strokeRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10); ctx.setLineDash([]);
         }
 
-        // Bolha de Pedido (Blitz)
-        if (gameState.isBlitzActive && Math.abs(this.x + this.width - DIFFICULTY.blitzLineX) < 25 && !this.isInspected && !this.documentsRequested) {
+        if (gameState.isBlitzActive && Math.abs(this.x + this.width - DIFFICULTY.blitzLineX) < 40 && !this.isInspected && !this.isApprehended) {
             this.drawRequestBubble(ctx);
         }
     }
@@ -191,13 +224,10 @@ class Car {
     drawRequestBubble(ctx) {
         const bx = this.x + this.width / 2;
         const by = this.y - 45;
-        ctx.fillStyle = '#fff';
-        ctx.beginPath(); ctx.roundRect(bx - 60, by - 30, 120, 40, 20); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(bx - 60, by - 30, 120, 40, 20); ctx.fill();
         ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2; ctx.stroke();
         ctx.fillStyle = '#222'; ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
-        ctx.fillText('PEDIR DOCS', bx, by - 14);
-        ctx.fillText('Clique Aqui', bx, by - 2);
-        ctx.textAlign = 'left';
+        ctx.fillText('DOCUMENTOS', bx, by - 8); ctx.textAlign = 'left';
     }
 }
 
@@ -210,42 +240,47 @@ function openInspection(car) {
     gameState.isPaused = true;
     gameState.currentLicenseCar = car;
     
-    // Preencher modal
-    cnhPoints.innerText = car.license.points;
-    cnhPoints.style.color = car.license.points >= 40 ? COLORS.trafficRed : 'inherit';
-    cnhFines.innerText = car.license.hasFines ? 'EXISTENTE (Pendente)' : 'NENHUMA (Regular)';
-    cnhFines.style.color = car.license.hasFines ? COLORS.trafficRed : COLORS.trafficGreen;
-    cnhIpva.innerText = car.license.docRegular ? 'EM DIA' : 'ATRASADO / IRREGULAR';
-    cnhIpva.style.color = car.license.docRegular ? COLORS.trafficGreen : COLORS.trafficRed;
+    cnhName.innerText = car.name;
+    cnhAge.innerText = car.age;
+    cnhPlate.innerText = car.plate;
+    cnhStatus.innerText = car.hasLicense ? 'HABILITADO (OK)' : '!!! SEM HABILITAÇÃO !!!';
+    cnhStatus.style.color = car.hasLicense ? COLORS.trafficGreen : COLORS.trafficRed;
+    cnhPoints.innerText = car.hasLicense ? car.licensePoints : '---';
     
     inspectionScreen.classList.remove('hidden');
 }
 
-function closeInspection(isCorrectMulta) {
+function closeInspection(isFining) {
     inspectionScreen.classList.add('hidden');
     gameState.isPaused = false;
-    
     const car = gameState.currentLicenseCar;
-    car.documentsRequested = true;
     car.isInspected = true;
     
-    if (isCorrectMulta) {
-        if (car.license.isIrregular) {
-            gameState.score += 150; addFeedback('+150 AUTOADO!', car.x + 50, car.y, COLORS.trafficGreen);
-            car.isFined = true;
+    const isIrregular = !car.hasLicense || car.age < 18 || car.hasPhoneInfraction || car.licensePoints >= 40;
+    
+    if (isFining) {
+        if (isIrregular) {
+            gameState.score += 150;
+            if (car.age < 18) {
+                addFeedback('CARRO APREENDIDO POR ESTAR NA MÃO DE UM MENOR DE IDADE', car.x, car.y - 120, COLORS.trafficRed);
+            } else if (!car.hasLicense) {
+                addFeedback('+150 SEM HABILITAÇÃO!', car.x, car.y - 50, COLORS.trafficGreen);
+            } else {
+                addFeedback('+150 APREENDIDO!', car.x, car.y - 50, COLORS.trafficGreen);
+            }
+            car.isApprehended = true;
         } else {
-            gameState.score -= 50; addFeedback('-50 REGULAR!', car.x + 50, car.y, COLORS.trafficRed);
+            gameState.score -= 50;
+            addFeedback('-50 REGULAR!', car.x, car.y, COLORS.trafficRed);
             car.wasWronglyFined = true;
         }
     } else {
-        // Liberou voluntariamente
-        if (car.license.isIrregular) {
-            gameState.score -= 100; addFeedback('-100 ESCAPOU!', car.x + 50, car.y, COLORS.trafficRed);
+        if (isIrregular) {
+            gameState.score -= 100; addFeedback('-100 ESCAPOU!', car.x, car.y, COLORS.trafficRed);
         } else {
-            gameState.score += 30; addFeedback('+30 LIBERADO!', car.x + 50, car.y, COLORS.trafficGreen);
+            gameState.score += 30; addFeedback('+30 LIBERADO!', car.x, car.y, COLORS.trafficGreen);
         }
     }
-    
     scoreEl.innerText = gameState.score;
     gameState.currentLicenseCar = null;
 }
@@ -273,7 +308,7 @@ function startTimer() {
 }
 
 function endGame() { gameState.isGameOver = true; finalScoreEl.innerText = gameState.score; gameOverScreen.classList.remove('hidden'); }
-function addFeedback(text, x, y, color) { gameState.feedbackMessages.push({ text, x, y: y - 20, color, opacity: 1, timer: 70, scale: 1 }); }
+function addFeedback(text, x, y, color) { gameState.feedbackMessages.push({ text, x, y: y - 20, color, opacity: 1, timer: 140, scale: 1 }); }
 function canSpawn(lane) { return !gameState.cars.some(car => car.lane === lane && car.x < 220); }
 
 // --- Inputs ---
@@ -283,7 +318,6 @@ canvas.addEventListener('mousedown', (e) => {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
     
-    // Semáforo
     const lightX = DIFFICULTY.stopLineX + 20; const lightY = 150;
     if (mouseX > lightX - 55 && mouseX < lightX + 55 && mouseY > lightY - 110 && mouseY < lightY + 110) {
         gameState.trafficLight = gameState.trafficLight === 'GREEN' ? 'RED' : 'GREEN'; return;
@@ -291,12 +325,11 @@ canvas.addEventListener('mousedown', (e) => {
 
     for (let car of gameState.cars) {
         if (mouseX > car.x && mouseX < car.x + car.width && mouseY > car.y && mouseY < car.y + car.height) {
-            // Especial Blitz
-            if (gameState.isBlitzActive && Math.abs(car.x + car.width - DIFFICULTY.blitzLineX) < 40 && !car.isInspected) {
-                openInspection(car);
+            if (gameState.isBlitzActive && Math.abs(car.x + car.width - DIFFICULTY.blitzLineX) < 60 && !car.isInspected) {
+                let carAheadAtBlitz = gameState.cars.find(c => c.targetLane === 0 && c.x > car.x && Math.abs(c.x + c.width - DIFFICULTY.blitzLineX) < 80 && !c.isInspected);
+                if (!carAheadAtBlitz) openInspection(car);
                 return;
             }
-            // Multa Normal
             if (car.isFined) return;
             if (car.committedRedLightInfraction || car.hasPhoneInfraction) {
                 gameState.score += 100; addFeedback('+100', mouseX, mouseY, COLORS.trafficGreen); car.isFined = true;
@@ -317,19 +350,18 @@ failRestartBtn.addEventListener('click', resetGame);
 
 blitzBtn.addEventListener('click', () => {
     if (gameState.isBlitzActive || !gameState.hasStarted || gameState.isGameOver) return;
-    gameState.isBlitzActive = true; blitzBtn.disabled = true; blitzBtn.innerText = 'BLITZ EM CURSO...';
+    gameState.isBlitzActive = true; blitzBtn.disabled = true; blitzBtn.innerText = 'BLITZ (10s)...';
     setTimeout(() => {
-        gameState.isBlitzActive = false; blitzBtn.innerText = 'RECARREGANDO...';
-        gameState.cars.forEach(car => car.isInspected = true);
+        gameState.isBlitzActive = false; blitzBtn.innerText = 'RECARREGANDO (20s)...';
+        gameState.cars.forEach(car => { car.isInspected = true; car.targetLane = car.lane; });
         setTimeout(() => { blitzBtn.disabled = false; blitzBtn.innerText = 'ACIONAR BLITZ'; }, 20000);
-    }, 18000);
+    }, 10000);
 });
 
 // --- Loop ---
 function drawPolicemen(ctx) {
     if (!gameState.isBlitzActive) return;
-    const x = DIFFICULTY.blitzLineX;
-    drawOfficer(ctx, x, 175); drawOfficer(ctx, x, 395);
+    drawOfficer(ctx, DIFFICULTY.blitzLineX, 175); 
 }
 function drawOfficer(ctx, x, y) {
     ctx.fillStyle = COLORS.police; ctx.beginPath(); ctx.roundRect(x - 10, y, 20, 30, 5); ctx.fill();
@@ -371,16 +403,14 @@ function gameLoop() {
             drawBackground();
             let resetRequested = false;
             gameState.cars = gameState.cars.filter(car => {
-                const laneCars = gameState.cars.filter(c => c.lane === car.lane);
-                const triggerFail = car.update(gameState.trafficLight, DIFFICULTY.stopLineX, laneCars, gameState.isBlitzActive);
+                const triggerFail = car.update(gameState.trafficLight, DIFFICULTY.stopLineX, gameState.cars.filter(c => c.targetLane === car.targetLane), gameState.isBlitzActive);
                 if (triggerFail) resetRequested = true;
-                return car.x < canvas.width + 250;
+                return car.y > -100; 
             });
             if (resetRequested) return;
             gameState.cars.sort((a, b) => b.x - a.x);
             for (let car of gameState.cars) { car.draw(ctx); }
         } else {
-            // Se pausado, apenas redesenha para manter o estado visual
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
             for (let car of gameState.cars) { car.draw(ctx); }
@@ -390,8 +420,9 @@ function gameLoop() {
         for (let i = gameState.feedbackMessages.length - 1; i >= 0; i--) {
             let msg = gameState.feedbackMessages[i];
             ctx.fillStyle = msg.color; ctx.globalAlpha = msg.opacity;
-            ctx.font = `bold ${24 * msg.scale}px 'Segoe UI'`; ctx.fillText(msg.text, msg.x, msg.y);
-            if (!gameState.isPaused) { msg.y -= 1.2; msg.timer--; msg.opacity -= 0.015; msg.scale += 0.005; }
+            ctx.font = msg.text.length > 30 ? "bold 13px Segoe UI" : "bold 20px Segoe UI";
+            ctx.fillText(msg.text, msg.x, msg.y);
+            if (!gameState.isPaused) { msg.y -= 0.6; msg.timer--; msg.opacity -= 0.007; }
             if (msg.timer <= 0) gameState.feedbackMessages.splice(i, 1);
         }
         ctx.globalAlpha = 1; requestAnimationFrame(gameLoop);

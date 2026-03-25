@@ -96,7 +96,7 @@ body {
 }
 
 /* UI Elements */
-#game-over-screen, #start-screen {
+#game-over-screen, #start-screen, #fail-screen {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -117,33 +117,6 @@ body {
     background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));
-}
-
-#game-over-screen h2 {
-    margin-bottom: 10px;
-    color: var(--warning-color);
-    font-size: 2rem;
-}
-
-#game-over-screen p {
-    margin-bottom: 25px;
-    font-size: 1.1rem;
-    opacity: 0.8;
-}
-
-#final-score {
-    font-size: 3rem;
-    font-weight: 800;
-    display: block;
-    margin: 10px 0;
-    color: #fff;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-}
-
-#start-screen p {
-    margin-bottom: 30px;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.8);
 }
 
 .primary-btn, .secondary-btn {
@@ -170,21 +143,10 @@ body {
     box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2);
 }
 
-.primary-btn:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 25px rgba(52, 152, 219, 0.5);
-}
+.primary-btn:hover { transform: translateY(-3px) scale(1.02); }
+.secondary-btn:hover { transform: translateY(-3px) scale(1.02); }
 
-.secondary-btn:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 15px 25px rgba(243, 156, 18, 0.4);
-}
-
-.secondary-btn:disabled {
-    background: #555;
-    opacity: 0.5;
-    cursor: wait;
-}
+.secondary-btn:disabled { background: #555; opacity: 0.5; cursor: wait; }
 
 #document-inspection {
     position: absolute;
@@ -209,62 +171,30 @@ body {
     font-size: 0.9rem;
     text-align: center;
     letter-spacing: 1px;
-    border-bottom: 3px solid #f1c40f; /* Detalhe dourado */
+    border-bottom: 3px solid #f1c40f;
 }
 
-.cnh-body {
-    padding: 25px;
-}
+.cnh-body { padding: 25px; }
 
 .details p {
-    margin-bottom: 20px;
-    font-size: 1.1rem;
+    margin-bottom: 15px;
+    font-size: 1rem;
     border-bottom: 1px solid #eee;
     padding-bottom: 5px;
 }
 
-.details hr {
-    margin: 20px 0;
-    border: 0.5px dashed #ccc;
-}
-
 .details strong {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #666;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
-.actions {
-    display: flex;
-    gap: 15px;
-    margin-top: 30px;
-}
+.actions { display: flex; gap: 15px; margin-top: 25px; }
+.primary-btn.danger { background: var(--danger-color); padding: 12px; flex: 1; }
+.primary-btn.success { background: var(--success-color); padding: 12px; flex: 1; }
 
-.primary-btn.danger { background: var(--danger-color); padding: 12px; font-size: 0.9rem; flex: 1; }
-.primary-btn.success { background: var(--success-color); padding: 12px; font-size: 0.9rem; flex: 1; }
-
-.primary-btn:active {
-    transform: translateY(0);
-}
-
-#controls-hint {
-    position: absolute;
-    bottom: 20px;
-    padding: 12px 25px;
-    border-radius: 15px;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.6);
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.hidden {
-    display: none !important;
-}
-
+.hidden { display: none !important; }
 @keyframes slideIn {
     from { opacity: 0; transform: translate(-50%, -30%) scale(0.9); }
     to { opacity: 1; transform: translate(-50%, -50%) scale(1); }

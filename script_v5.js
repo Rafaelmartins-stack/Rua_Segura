@@ -206,10 +206,12 @@ class Car {
             ctx.lineWidth = 4; ctx.setLineDash([6, 4]); ctx.strokeRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10); ctx.setLineDash([]);
         }
 
-        // Inspeção Blitz
-        if (gameState.isBlitzActive && Math.abs(this.x + this.width - DIFFICULTY.blitzLineX) < 80 && !this.isInspected && !this.isApprehended) {
-             const carAhead = gameState.cars.find(c => c.x > this.x && Math.abs(c.x + c.width - DIFFICULTY.blitzLineX) < 120 && !c.isInspected && !c.isApprehended);
-             if (!carAhead) this.drawRequestBubble(ctx);
+        // Inspeção Blitz (Garantir que apareça para o primeiro da fila)
+        if (gameState.isBlitzActive && this.lane === 0 && !this.isInspected && !this.isApprehended) {
+             const carAhead = gameState.cars.find(c => c.lane === 0 && c.x > this.x && !c.isInspected && !c.isApprehended);
+             if (!carAhead && this.x + this.width > DIFFICULTY.blitzLineX - 250) {
+                 this.drawRequestBubble(ctx);
+             }
         }
     }
 
@@ -332,9 +334,14 @@ canvas.addEventListener('mousedown', (e) => {
     for (let car of gameState.cars) {
         if (mx > car.x && mx < car.x + car.width && my > car.y && my < car.y + car.height) {
             // Blitz
-            if (gameState.isBlitzActive && car.x + car.width > DIFFICULTY.blitzLineX - 120 && car.x < DIFFICULTY.blitzLineX + 80 && !car.isInspected && !car.isApprehended) {
-                const ahead = gameState.cars.find(c => c.x > car.x && c.x + c.width > DIFFICULTY.blitzLineX - 100 && !c.isInspected && !c.isApprehended);
-                if (!ahead) { openInspection(car); return; }
+            // Blitz: Se clicar em qualquer carro que não foi inspecionado ainda na fila
+            if (gameState.isBlitzActive && car.lane === 0 && !car.isInspected && !car.isApprehended) {
+                // Abre apenas se for o primeiro da fila (o mais à frente)
+                const carAhead = gameState.cars.find(c => c.lane === 0 && c.x > car.x && !c.isInspected && !c.isApprehended);
+                if (!carAhead) { 
+                    openInspection(car); 
+                    return; 
+                }
             }
             // Multa Normal
             if (car.isFined || car.isApprehended) return;

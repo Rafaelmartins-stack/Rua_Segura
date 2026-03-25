@@ -63,35 +63,41 @@ let gameState = {
     frameToken: 0 // Para validar se o loop está rodando
 };
 
-// --- Cores ---
+// --- Assets ---
+const CAR_IMAGES = {
+    sports: new Image(),
+    red_sedan: new Image(),
+    green_sedan: new Image(),
+    van: new Image()
+};
+CAR_IMAGES.sports.src = 'assets/car_sports.png';
+CAR_IMAGES.red_sedan.src = 'assets/car_red_sedan.png';
+CAR_IMAGES.green_sedan.src = 'assets/car_green_sedan.png';
+CAR_IMAGES.van.src = 'assets/car_van.png';
+
 const COLORS = {
     road: '#2c3e50',
     line: '#ecf0f1',
     trafficGreen: '#2ecc71',
     trafficRed: '#e74c3c',
-    police: '#2980b9',
-    carColors: [
-        { main: '#3498db', dark: '#2980b9' }, 
-        { main: '#e74c3c', dark: '#c0392b' }, 
-        { main: '#f1c40f', dark: '#f39c12' }, 
-        { main: '#9b59b6', dark: '#8e44ad' }, 
-        { main: '#1abc9c', dark: '#16a085' }
-    ],
+    police: '#2980b9'
 };
 
 // --- Classe Carro (REESCRITA PARA MÁXIMA SIMPLICIDADE) ---
 class Car {
     constructor(lane) {
-        this.width = 100;
-        this.height = 40; 
+        this.width = 110; // Ajustado para os sprites
+        this.height = 55; // Ajustado para os sprites
         this.lane = lane;
         this.baseLane = lane;
         this.x = -150; 
-        this.y = 200 + (lane * 50) + 5;
+        this.y = 200 + (lane * 50) - 2; // Ajuste fino no Y para o sprite
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
-        const colorSet = COLORS.carColors[Math.floor(Math.random() * COLORS.carColors.length)];
-        this.color = colorSet.main;
+        
+        // Atribui sprite aleatório
+        const keys = Object.keys(CAR_IMAGES);
+        this.sprite = CAR_IMAGES[keys[Math.floor(Math.random() * keys.length)]];
         
         // Dados
         this.name = NAMES[Math.floor(Math.random()*NAMES.length)] + " " + SURNAMES[Math.floor(Math.random()*SURNAMES.length)];
@@ -171,21 +177,18 @@ class Car {
     draw(ctx) {
         // Sombra
         ctx.fillStyle = "rgba(0,0,0,0.3)";
-        ctx.fillRect(this.x + 4, this.y + 4, this.width, this.height);
+        ctx.fillRect(this.x + 5, this.y + 10, this.width - 10, this.height - 10);
         
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        // Desenha Sprite Pixel Art
+        ctx.imageSmoothingEnabled = false; 
+        ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
         
-        // Janela
-        ctx.fillStyle = "rgba(255,255,255,0.4)";
-        ctx.fillRect(this.x + 70, this.y + 5, 20, this.height - 10);
-        
-        // Celular
+        // Celular (Ícone flutuante sobre o carro)
         if (this.hasPhoneInfraction) {
             ctx.fillStyle = "#222";
-            ctx.fillRect(this.x + 80, this.y + 20, 6, 10);
+            ctx.fillRect(this.x + this.width - 30, this.y + 10, 8, 14);
             ctx.fillStyle = "#3498db";
-            ctx.fillRect(this.x + 81, this.y + 21, 4, 3);
+            ctx.fillRect(this.x + this.width - 29, this.y + 11, 6, 6);
         }
 
         // Inspeção Blitz (Garantir que apareça para o primeiro da fila)

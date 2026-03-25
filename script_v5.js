@@ -1,5 +1,5 @@
 /**
- * Rua Segura - v5.1 (Fixed Crash & Improved Reliability)
+ * Rua Segura - v5.2 (Compatibility & Stability Fix)
  * @description Jogo de fiscalização de trânsito desenvolvido em JavaScript Vanilla.
  * @author Antigravity
  */
@@ -31,7 +31,7 @@ const blitzBtn = document.getElementById('blitz-btn');
 
 // --- Configurações ---
 const DIFFICULTY = {
-    carSpawnRate: 0.025,       
+    carSpawnRate: 0.03, // Aumentado         
     minCarSpeed: 2.2,           
     maxCarSpeed: 4.5,           
     phoneInfractionRate: 0.3, 
@@ -39,8 +39,8 @@ const DIFFICULTY = {
     gameDurationSeconds: 300,  
     stopLineX: 650,           
     blitzLineX: 520,          
-    safeDistance: 140,        
-    minimumGap: 35,           
+    safeDistance: 130,        
+    minimumGap: 30,           
     laneCount: 4,             
 };
 
@@ -108,7 +108,7 @@ class Car {
         this.isFined = false;
         this.isInspected = false; 
         this.isApprehended = false; 
-        this.wasWronglyFined = false; // Corrigido: Variável faltante
+        this.wasWronglyFined = false; 
     }
 
     generatePlate() {
@@ -182,19 +182,19 @@ class Car {
 
     draw(ctx) {
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.beginPath(); ctx.roundRect(this.x + 5, this.y + 8, this.width, this.height, 8); ctx.fill();
+        ctx.fillRect(this.x + 5, this.y + 8, this.width, this.height);
         const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
         grad.addColorStop(0, this.color); grad.addColorStop(1, this.darkColor);
         ctx.fillStyle = grad;
-        ctx.beginPath(); ctx.roundRect(this.x, this.y, this.width, this.height, 8); ctx.fill();
+        ctx.fillRect(this.x, this.y, this.width, this.height);
         ctx.fillStyle = 'rgba(174, 190, 196, 0.9)';
-        ctx.beginPath(); ctx.roundRect(this.x + 75, this.y + 6, 25, this.height - 12, [0, 5, 5, 0]); ctx.fill();
+        ctx.fillRect(this.x + 75, this.y + 6, 25, this.height - 12);
         this.drawWheel(ctx, this.x + 15, this.y - 3);
         this.drawWheel(ctx, this.x + 15, this.y + this.height - 5);
         this.drawWheel(ctx, this.x + 80, this.y - 3);
         this.drawWheel(ctx, this.x + 80, this.y + this.height - 5);
         if (this.hasPhoneInfraction) {
-            ctx.fillStyle = '#101010'; ctx.roundRect(this.x + 82, this.y + 15, 8, 14, 2); ctx.fill();
+            ctx.fillStyle = '#101010'; ctx.fillRect(this.x + 82, this.y + 15, 8, 14); ctx.fill();
             ctx.fillStyle = this.isFined || this.isApprehended ? COLORS.trafficGreen : '#3498db';
             ctx.fillRect(this.x + 83, this.y + 17, 6, 10);
         }
@@ -211,13 +211,13 @@ class Car {
         }
     }
 
-    drawWheel(ctx, x, y) { ctx.fillStyle = '#111'; ctx.beginPath(); ctx.roundRect(x, y, 22, 8, 3); ctx.fill(); }
+    drawWheel(ctx, x, y) { ctx.fillStyle = '#111'; ctx.fillRect(x, y, 22, 8); }
 
     drawRequestBubble(ctx) {
         const bx = this.x + this.width / 2;
         const by = this.y - 50;
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.roundRect(bx - 55, by - 30, 110, 40, 20); ctx.fill();
-        ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.fillRect(bx - 55, by - 30, 110, 40);
+        ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2; ctx.strokeRect(bx - 55, by - 30, 110, 40);
         ctx.fillStyle = '#222'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center';
         ctx.fillText('VER DOCS', bx, by - 8); ctx.textAlign = 'left';
     }
@@ -248,9 +248,7 @@ function resolveInspection(isFining) {
     const car = gameState.currentLicenseCar;
     if (!car) return;
     car.isInspected = true;
-    
     const isIrregular = !car.hasLicense || car.age < 18 || car.hasPhoneInfraction || car.licensePoints >= 40;
-    
     if (isFining) {
         if (isIrregular) {
             gameState.score += 150;
@@ -301,11 +299,9 @@ canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    
     if (mx > DIFFICULTY.stopLineX - 10 && mx < DIFFICULTY.stopLineX + 80 && my > 80 && my < 450) {
         gameState.trafficLight = gameState.trafficLight === 'GREEN' ? 'RED' : 'GREEN'; return;
     }
-
     for (let car of gameState.cars) {
         if (mx > car.x && mx < car.x + car.width && my > car.y && my < car.y + car.height) {
             if (gameState.isBlitzActive && car.lane === 0 && !car.isInspected && !car.isApprehended) {
@@ -359,7 +355,7 @@ function drawBackground() {
     for(let i = 0; i < 11; i++) { ctx.fillRect(zebraX, 205 + (i * 20), 60, 10); }
     ctx.fillStyle = COLORS.line; ctx.fillRect(DIFFICULTY.stopLineX - 8, 200, 16, 220);
     const lightX = DIFFICULTY.stopLineX + 20; ctx.fillStyle = '#444'; ctx.fillRect(lightX - 6, 150, 12, 300);
-    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(lightX - 25, 80, 50, 110, 10); ctx.fill();
+    ctx.fillStyle = '#222'; ctx.fillRect(lightX - 25, 80, 50, 110);
     drawLight(ctx, lightX, 110, gameState.trafficLight === 'RED' ? COLORS.trafficRed : '#111');
     drawLight(ctx, lightX, 165, gameState.trafficLight === 'GREEN' ? COLORS.trafficGreen : '#111');
     if (gameState.isBlitzActive) {
@@ -369,29 +365,28 @@ function drawBackground() {
 }
 
 function drawLight(ctx, x, y, color) { if (color !== '#111') { ctx.shadowBlur = 20; ctx.shadowColor = color; } ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; }
-function drawOfficer(ctx, x, y) { ctx.fillStyle = COLORS.police; ctx.beginPath(); ctx.roundRect(x - 10, y, 20, 30, 5); ctx.fill(); ctx.fillStyle = '#ffdbac'; ctx.beginPath(); ctx.arc(x, y + 10, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = COLORS.police; ctx.fillRect(x - 12, y - 2, 24, 6); }
+function drawOfficer(ctx, x, y) { ctx.fillStyle = COLORS.police; ctx.fillRect(x - 10, y, 20, 30); ctx.fillStyle = '#ffdbac'; ctx.beginPath(); ctx.arc(x, y + 10, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = COLORS.police; ctx.fillRect(x - 12, y - 2, 24, 6); }
 function drawStaticFrame() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBackground(); }
 
 function gameLoop() {
-    if (!gameState.isGameOver && gameState.hasStarted) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        if (!gameState.isPaused) {
-            if (Math.random() < DIFFICULTY.carSpawnRate) { 
-                let lane = Math.floor(Math.random() * DIFFICULTY.laneCount); 
-                if (canSpawn(lane)) { gameState.cars.push(new Car(lane)); } 
-            }
-            gameState.cars = gameState.cars.filter(car => { return car.y > -150 && !car.update(gameState.trafficLight, gameState.isBlitzActive); });
+    if (gameState.isGameOver || !gameState.hasStarted) { gameState.loopRunning = false; return; }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!gameState.isPaused) {
+        if (Math.random() < DIFFICULTY.carSpawnRate) { 
+            let lane = Math.floor(Math.random() * DIFFICULTY.laneCount); 
+            if (canSpawn(lane)) { gameState.cars.push(new Car(lane)); } 
         }
-        drawBackground();
-        gameState.cars.sort((a,b) => b.x - a.x).forEach(c => c.draw(ctx));
-        ctx.textAlign = 'center';
-        for (let i = gameState.feedbackMessages.length-1; i>=0; i--) {
-            let m = gameState.feedbackMessages[i]; ctx.fillStyle = m.color; ctx.globalAlpha = m.opacity;
-            ctx.font = m.text.length > 30 ? "bold 13px Arial" : "bold 18px Arial"; ctx.fillText(m.text, m.x, m.y);
-            if (!gameState.isPaused) { m.y -= 0.6; m.opacity -= 0.007; m.timer--; }
-            if (m.timer <= 0) gameState.feedbackMessages.splice(i,1);
-        }
-        ctx.globalAlpha = 1; requestAnimationFrame(gameLoop);
-    } else { gameState.loopRunning = false; }
+        gameState.cars = gameState.cars.filter(car => { return car.y > -150 && !car.update(gameState.trafficLight, gameState.isBlitzActive); });
+    }
+    drawBackground();
+    gameState.cars.sort((a,b) => b.x - a.x).forEach(c => c.draw(ctx));
+    ctx.textAlign = 'center';
+    for (let i = gameState.feedbackMessages.length-1; i>=0; i--) {
+        let m = gameState.feedbackMessages[i]; ctx.fillStyle = m.color; ctx.globalAlpha = m.opacity;
+        ctx.font = m.text.length > 30 ? "bold 13px Arial" : "bold 18px Arial"; ctx.fillText(m.text, m.x, m.y);
+        if (!gameState.isPaused) { m.y -= 0.6; m.opacity -= 0.007; m.timer--; }
+        if (m.timer <= 0) gameState.feedbackMessages.splice(i,1);
+    }
+    ctx.globalAlpha = 1; requestAnimationFrame(gameLoop);
 }
 init();

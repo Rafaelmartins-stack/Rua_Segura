@@ -207,8 +207,8 @@ class Car {
             ctx.lineWidth = 4; ctx.setLineDash([6, 4]); ctx.strokeRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10); ctx.setLineDash([]);
         }
 
-        // Pedido Docs
-        if (gameState.isBlitzActive && Math.abs(this.x + this.width - DIFFICULTY.blitzLineX) < 15 && !this.isInspected && !this.isApprehended) {
+        // Pedido Docs (Aumentado a tolerância para aparecer assim que parar)
+        if (gameState.isBlitzActive && Math.abs(this.x + this.width - DIFFICULTY.blitzLineX) < 60 && !this.isInspected && !this.isApprehended) {
              const carAhead = gameState.cars.find(c => c.x > this.x && Math.abs(c.x + c.width - DIFFICULTY.blitzLineX) < 80 && !c.isInspected && !c.isApprehended);
              if (!carAhead) this.drawRequestBubble(ctx);
         }
@@ -305,8 +305,9 @@ canvas.addEventListener('mousedown', (e) => {
     }
     for (let car of gameState.cars) {
         if (mx > car.x && mx < car.x + car.width && my > car.y && my < car.y + car.height) {
-            if (gameState.isBlitzActive && Math.abs(car.x + car.width - DIFFICULTY.blitzLineX) < 80 && !car.isInspected && !car.isApprehended) {
-                const ahead = gameState.cars.find(c => c.x > car.x && Math.abs(c.x + c.width - DIFFICULTY.blitzLineX) < 100 && !c.isInspected && !c.isApprehended);
+            // Blitz: Aumentada área de detecção
+            if (gameState.isBlitzActive && Math.abs(car.x + car.width - DIFFICULTY.blitzLineX) < 120 && !car.isInspected && !car.isApprehended) {
+                const ahead = gameState.cars.find(c => c.x > car.x && Math.abs(c.x + c.width - DIFFICULTY.blitzLineX) < 120 && !c.isInspected && !c.isApprehended);
                 if (!ahead) { openInspection(car); return; }
             }
             if (car.isFined || car.isApprehended) return;

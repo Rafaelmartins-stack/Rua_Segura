@@ -16,13 +16,14 @@ const startBtn = document.getElementById('start-btn');
 
 // --- Configurações de Dificuldade ---
 const DIFFICULTY = {
-    carSpawnRate: 0.012,       // Chance de um carro aparecer (reduzido para evitar congestionamento)
+    carSpawnRate: 0.01,       // Reduzido para menos tráfego e menos bugs
     minCarSpeed: 2,           
     maxCarSpeed: 4,           
     phoneInfractionRate: 0.3, 
     gameDurationSeconds: 120, 
-    stopLineX: 620,           // Posição ajustada para alinhar com a visualização
-    safeDistance: 130,        // Distância mínima entre carros (maior que o comprimento do carro)
+    stopLineX: 620,           
+    safeDistance: 150,        // Aumentado para mais espaço entre carros
+    minimumGap: 40,           // Espaço mínimo obrigatório entre parachoques
 };
 
 // --- Estado do Jogo ---
@@ -36,7 +37,7 @@ let gameState = {
     feedbackMessages: [], 
 };
 
-// --- Cores e Estética ---
+// --- Estética ---
 const COLORS = {
     road: '#2c3e50',
     grass: '#1a1a1a',
@@ -60,9 +61,9 @@ class Car {
     constructor(lane) {
         this.width = 110;
         this.height = 55;
-        this.x = -this.width - 20; // Começar um pouco antes para suavizar spawn
-        this.lane = lane; // 0 para cima, 1 para baixo
-        this.y = 250 + (this.lane === 0 ? -50 : 50); 
+        this.x = -this.width - 50; 
+        this.lane = lane;
+        this.y = 250 + (this.lane === 0 ? -53 : 53); // Ajuste fino para não tocar na linha central
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
         
@@ -77,36 +78,46 @@ class Car {
     }
 
     update(trafficLight, stopLineX, carsInLane) {
-        const frontX = this.x + this.width;
-        let targetSpeed = this.baseSpeed;
+        // Encontrar o carro imediatamente à frente (menor X entre os que estão maiores que o meu)
+        const carAhead = carsInLane
+            .filter(c => c !== this && c.x > this.x)
+            .sort((a, b) => a.x - b.x)[0];
 
-        // 1. Lógica de frenagem no semáforo
-        if (trafficLight === 'RED' && frontX < stopLineX - 10 && frontX > stopLineX - 180) {
+        let targetSpeed = this.baseSpeed;
+        const frontX = this.x + this.width;
+
+        // 1. Semáforo
+        if (trafficLight === 'RED' && frontX < stopLineX - 10 && frontX > stopLineX - 250) {
             targetSpeed = 0;
         }
 
-        // 2. Lógica de "Hitbox" / Distância de segurança (não bater no carro da frente)
-        const carAhead = carsInLane.find(other => other.x > this.x);
+        // 2. Colisão / Distância de Segurança
         if (carAhead) {
             const distance = carAhead.x - frontX;
-            if (distance < 20) {
-                targetSpeed = 0; // Para imediatamente se estiver muito perto
+            
+            if (distance < DIFFICULTY.minimumGap) {
+                targetSpeed = 0;
+                // Correção de posição se houver sobreposição detectada
+                if (distance < 5) {
+                    this.x = carAhead.x - this.width - DIFFICULTY.minimumGap;
+                    this.speed = 0;
+                }
             } else if (distance < DIFFICULTY.safeDistance) {
-                targetSpeed = Math.min(targetSpeed, carAhead.speed); // Iguala velocidade
-                if (distance < 50) targetSpeed *= 0.5; // Desacelera mais se estiver encostando
+                // Redução gradual baseada na distância
+                const factor = (distance - DIFFICULTY.minimumGap) / (DIFFICULTY.safeDistance - DIFFICULTY.minimumGap);
+                targetSpeed = Math.min(targetSpeed, carAhead.speed * factor + 0.2);
             }
         }
 
-        // Suavização do movimento (aceleração/frenagem)
+        // Aceleração/Desaceleração suave
         if (this.speed > targetSpeed) {
             this.speed = Math.max(targetSpeed, this.speed - 0.2);
         } else if (this.speed < targetSpeed) {
             this.speed = Math.min(targetSpeed, this.speed + 0.1);
         }
 
-        // 3. Detectar avanço de sinal (Infração)
-        // Só conta se o sinal estiver vermelho E o carro cruzar a linha (não apenas se estiver parado nela)
-        if (trafficLight === 'RED' && frontX > stopLineX && this.x < stopLineX + 30 && this.speed > 0.5) {
+        // 3. Detecção de Infração de Sinal
+        if (trafficLight === 'RED' && frontX > stopLineX && this.x < stopLineX + 30 && this.speed > 0.3) {
             this.committedRedLightInfraction = true;
         }
 
@@ -120,7 +131,7 @@ class Car {
         ctx.roundRect(this.x + 5, this.y + 8, this.width, this.height, 10);
         ctx.fill();
 
-        // Corpo Principal
+        // Corpo
         const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
         grad.addColorStop(0, this.color);
         grad.addColorStop(1, this.darkColor);
@@ -129,35 +140,33 @@ class Car {
         ctx.roundRect(this.x, this.y, this.width, this.height, 8);
         ctx.fill();
 
-        // Teto/Cabine
+        // Cabine
         ctx.fillStyle = 'rgba(0,0,0,0.15)';
         ctx.beginPath();
         ctx.roundRect(this.x + 20, this.y + 5, 60, this.height - 10, 5);
         ctx.fill();
 
-        // Para-brisa
-        ctx.fillStyle = '#aebec4';
+        // Vidros
+        ctx.fillStyle = 'rgba(174, 190, 196, 0.9)';
         ctx.beginPath();
         ctx.roundRect(this.x + 75, this.y + 8, 25, this.height - 16, [0, 5, 5, 0]);
         ctx.fill();
 
-        // Faróis Frontais
+        // Luzes
         ctx.fillStyle = '#fff9c4'; 
-        ctx.fillRect(this.x + this.width - 5, this.y + 5, 5, 10);
-        ctx.fillRect(this.x + this.width - 5, this.y + this.height - 15, 5, 10);
-        
-        // Lanternas Traseiras
+        ctx.fillRect(this.x + this.width - 5, this.y + 8, 5, 12);
+        ctx.fillRect(this.x + this.width - 5, this.y + this.height - 20, 5, 12);
         ctx.fillStyle = '#ef5350'; 
-        ctx.fillRect(this.x, this.y + 5, 3, 10);
-        ctx.fillRect(this.x, this.y + this.height - 15, 3, 10);
+        ctx.fillRect(this.x, this.y + 8, 3, 12);
+        ctx.fillRect(this.x, this.y + this.height - 20, 3, 12);
 
-        // Rodas (Agora fixas horizontalmente conforme pedido)
+        // Rodas Horizontais
         this.drawWheel(ctx, this.x + 20, this.y - 3);
         this.drawWheel(ctx, this.x + 20, this.y + this.height - 5);
         this.drawWheel(ctx, this.x + 80, this.y - 3);
         this.drawWheel(ctx, this.x + 80, this.y + this.height - 5);
 
-        // Ícone de Celular
+        // Celular
         if (this.hasPhoneInfraction) {
             ctx.fillStyle = '#000';
             ctx.roundRect(this.x + 82, this.y + 20, 8, 14, 2);
@@ -166,10 +175,10 @@ class Car {
             ctx.fillRect(this.x + 83, this.y + 22, 6, 10);
         }
 
-        // Feedback se multado
+        // Feedback Multa
         if (this.isFined) {
             ctx.strokeStyle = this.wasWronglyFined ? COLORS.trafficRed : COLORS.trafficGreen;
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 3;
             ctx.setLineDash([5, 5]);
             ctx.strokeRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10);
             ctx.setLineDash([]);
@@ -177,7 +186,6 @@ class Car {
     }
 
     drawWheel(ctx, x, y) {
-        // Roda horizontal estática
         ctx.fillStyle = '#111';
         ctx.beginPath();
         ctx.roundRect(x, y, 22, 10, 3);
@@ -185,7 +193,7 @@ class Car {
     }
 }
 
-// --- Funções de Suporte ---
+// --- Funções core ---
 
 function init() {
     canvas.width = 900;
@@ -209,6 +217,7 @@ function resetGame() {
     gameState.feedbackMessages = [];
     scoreEl.innerText = '0';
     gameOverScreen.classList.add('hidden');
+    timerEl.innerText = '02:00';
     startTimer();
 }
 
@@ -244,20 +253,18 @@ function addFeedback(text, x, y, color) {
 }
 
 function canSpawn(lane) {
-    // Verifica se há espaço no início da pista para um novo carro
-    return !gameState.cars.some(car => car.lane === lane && car.x < 120);
+    // Aumentada a margem de segurança para o spawn
+    return !gameState.cars.some(car => car.lane === lane && car.x < 180);
 }
 
-// --- Input Handling ---
+// --- Inputs ---
 
 canvas.addEventListener('mousedown', (e) => {
     if (gameState.isGameOver || !gameState.hasStarted) return;
-
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Clique no semáforo
     const lightX = DIFFICULTY.stopLineX + 20;
     const lightY = 150;
     if (mouseX > lightX - 50 && mouseX < lightX + 50 && mouseY > lightY - 100 && mouseY < lightY + 100) {
@@ -265,11 +272,9 @@ canvas.addEventListener('mousedown', (e) => {
         return;
     }
 
-    // Clique nos carros
     for (let car of gameState.cars) {
         if (mouseX > car.x && mouseX < car.x + car.width && mouseY > car.y && mouseY < car.y + car.height) {
             if (car.isFined) return;
-
             car.isFined = true;
             if (car.committedRedLightInfraction || car.hasPhoneInfraction) {
                 gameState.score += 100;
@@ -286,9 +291,11 @@ canvas.addEventListener('mousedown', (e) => {
 });
 
 startBtn.addEventListener('click', startGame);
-restartBtn.addEventListener('click', resetGame);
+restartBtn.addEventListener('click', () => {
+    resetGame();
+});
 
-// --- Loop Principal ---
+// --- Loop ---
 
 function drawBackground() {
     ctx.fillStyle = '#34495e';
@@ -317,15 +324,12 @@ function drawBackground() {
 
     const lightX = DIFFICULTY.stopLineX + 20;
     const lightY = 150;
-    
     ctx.fillStyle = '#444';
     ctx.fillRect(lightX - 6, lightY, 12, 300);
-    
     ctx.fillStyle = '#222';
     ctx.beginPath();
     ctx.roundRect(lightX - 25, lightY - 70, 50, 110, 10);
     ctx.fill();
-    
     drawLight(ctx, lightX, lightY - 40, gameState.trafficLight === 'RED' ? COLORS.trafficRed : '#111');
     drawLight(ctx, lightX, lightY + 15, gameState.trafficLight === 'GREEN' ? COLORS.trafficGreen : '#111');
 }
@@ -351,7 +355,6 @@ function gameLoop() {
     if (!gameState.isGameOver && gameState.hasStarted) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Spawn de carros (com verificação de espaço)
         if (Math.random() < DIFFICULTY.carSpawnRate) {
             let lane = Math.random() > 0.5 ? 0 : 1;
             if (canSpawn(lane)) {
@@ -361,10 +364,10 @@ function gameLoop() {
 
         drawBackground();
 
-        // Ordenar carros por X para facilitar a lógica de distância
-        gameState.cars.sort((a, b) => b.x - a.x);
-
+        // Limpar carros fora da tela
         gameState.cars = gameState.cars.filter(car => car.x < canvas.width + 200);
+        
+        // Loop de atualização
         for (let car of gameState.cars) {
             const laneCars = gameState.cars.filter(c => c.lane === car.lane);
             car.update(gameState.trafficLight, DIFFICULTY.stopLineX, laneCars);
@@ -378,7 +381,6 @@ function gameLoop() {
             ctx.globalAlpha = msg.opacity;
             ctx.font = `bold ${24 * msg.scale}px 'Segoe UI'`;
             ctx.fillText(msg.text, msg.x, msg.y);
-            
             msg.y -= 1.2;
             msg.timer--;
             msg.opacity -= 0.015;
@@ -386,7 +388,6 @@ function gameLoop() {
             if (msg.timer <= 0) gameState.feedbackMessages.splice(i, 1);
         }
         ctx.globalAlpha = 1;
-
         requestAnimationFrame(gameLoop);
     }
 }

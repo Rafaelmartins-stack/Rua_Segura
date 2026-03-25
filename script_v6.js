@@ -435,6 +435,7 @@ blitzBtn.addEventListener('click', () => {
         if (bt <= 0) {
             clearInterval(bi);
             gameState.isBlitzActive = false;
+            gameState.trafficLight = 'GREEN'; // Abre o sinal instantaneamente após a blitz
             gameState.blitzCooldown = true;
             gameState.cars.forEach(c => { if(c.lane===0 && !c.isInspected) c.isInspected=true; });
             let ct = 20;

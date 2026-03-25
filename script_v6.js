@@ -142,20 +142,18 @@ class Car {
             }
         }
 
-        // Colisão Inteligente (Impede overlap total)
+        // Colisão Inteligente (MÁXIMA PRECISÃO)
         const carAhead = gameState.cars.find(c => {
             if (c === this) return false;
+            if (c.lane !== this.lane) return false; // Somente na mesma pista
             const horizontalGap = c.x - (this.x + this.width);
-            const verticalDist = Math.abs(c.y - this.y);
-            
-            // Se estiver na frente (ou ocupando quase o mesmo espaço X) e na mesma "pista"
-            return (c.x > this.x - 20) && verticalDist < 35 && horizontalGap < 100;
+            return horizontalGap > -this.width && horizontalGap < 120; // Detecta carros até 120px à frente
         });
 
         if (carAhead) {
             const gap = carAhead.x - (this.x + this.width);
-            if (gap < 25) targetSpeed = 0; // Para se estiver quase tocando
-            else targetSpeed = Math.min(targetSpeed, carAhead.speed * 0.8); // Reduz velocidade
+            if (gap < 40) targetSpeed = 0; // Para com margem de segurança
+            else targetSpeed = Math.min(targetSpeed, carAhead.speed * 0.9);
         }
 
         if (this.speed > targetSpeed) this.speed = Math.max(targetSpeed, this.speed - 0.2);
@@ -502,23 +500,57 @@ function drawBackground() {
     ctx.fillStyle = "#161616";
     ctx.fillRect(0, 190, 900, 10);
 
-    // Rua e arredores
+    // Rua e arredores (Camada base)
     ctx.fillStyle = "#34495e"; ctx.fillRect(0, 180, 900, 240);
     ctx.fillStyle = COLORS.road; ctx.fillRect(0, 200, 900, 210);
-    
-    // Detalhes da Rua (Rachaduras e Bueiros)
-    ctx.strokeStyle = "rgba(0,0,0,0.2)"; ctx.lineWidth = 1;
+
+    // Faixas da rua (Tracejadas)
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.setLineDash([30, 20]);
+    ctx.lineWidth = 2;
+    for(let i = 1; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 200 + i * 50);
+        ctx.lineTo(900, 200 + i * 50);
+        ctx.stroke();
+    }
+    ctx.setLineDash([]); // Reseta o dash
+
+    // Textura da Calçada (Superior e Inferior)
+    ctx.fillStyle = "rgba(0,0,0,0.1)";
+    for(let i=0; i<900; i+=25) {
+        ctx.fillRect(i, 180, 2, 20); // Linhas da calçada superior
+        ctx.fillRect(i, 410, 2, 50); // Linhas da calçada inferior
+    }
+
+    // Detalhes da Rua (Manchas de óleo e rachaduras)
+    ctx.fillStyle = "rgba(0,0,0,0.15)";
+    // Mancha de óleo 1
+    ctx.beginPath(); ctx.ellipse(200, 280, 20, 8, 0, 0, Math.PI * 2); ctx.fill();
+    // Mancha de óleo 2
+    ctx.beginPath(); ctx.ellipse(750, 360, 15, 6, 0.4, 0, Math.PI * 2); ctx.fill();
+
+    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1;
     // Rachadura 1
     ctx.beginPath(); ctx.moveTo(100, 220); ctx.lineTo(120, 230); ctx.lineTo(115, 240); ctx.stroke();
     // Rachadura 2
     ctx.beginPath(); ctx.moveTo(400, 350); ctx.lineTo(430, 365); ctx.lineTo(420, 380); ctx.stroke();
-    // Bueiro
-    ctx.fillStyle = "#1a252f"; ctx.beginPath(); ctx.arc(250, 320, 15, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = "#111"; ctx.stroke();
+    // Rachadura 3
+    ctx.beginPath(); ctx.moveTo(800, 250); ctx.lineTo(815, 260); ctx.lineTo(810, 275); ctx.stroke();
     
-    ctx.fillStyle = "rgba(255,255,255,0.3)";
-    for(let i=1; i<4; i++) { ctx.fillRect(0, 200 + i*50, 900, 2); }
-    ctx.fillStyle = "#fff"; ctx.fillRect(DIFFICULTY.stopLineX - 5, 200, 10, 210);
+    // Bueiro (Mais detalhado)
+    ctx.fillStyle = "#1a252f"; 
+    ctx.beginPath(); ctx.arc(250, 320, 15, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = "#111"; 
+    for(let j=0; j<8; j++) { // Grelha do bueiro
+        ctx.beginPath(); ctx.moveTo(250-10, 320-10+j*3); ctx.lineTo(250+10, 320-10+j*3); ctx.stroke();
+    }
+    
+    // Linha de Parada (Sólida e Brilhante)
+    ctx.fillStyle = "#fff"; 
+    ctx.shadowColor = "#fff"; ctx.shadowBlur = 5;
+    ctx.fillRect(DIFFICULTY.stopLineX - 5, 200, 10, 210);
+    ctx.shadowBlur = 0; // Desliga o blur para o resto
     
     // Sinal
     ctx.fillStyle = "#222"; ctx.fillRect(665, 80, 40, 90);

@@ -192,7 +192,7 @@ class Car {
         ctx.imageSmoothingEnabled = false; 
         
         // Desenho com Sprites e Inversão (restaurado)
-        if (this.sprite === CAR_IMAGES.red_sedan) {
+        if (this.sprite === CAR_IMAGES.red_sedan || this.sprite === CAR_IMAGES.green_sedan) {
             ctx.save();
             ctx.translate(this.x + this.width, this.y);
             ctx.scale(-1, 1);

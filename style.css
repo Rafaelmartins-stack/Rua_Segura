@@ -1,0 +1,193 @@
+/* Rua Segura - Design System */
+:root {
+    --primary-color: #3498db;
+    --success-color: #2ecc71;
+    --danger-color: #e74c3c;
+    --warning-color: #f1c40f;
+    --bg-dark: #121212;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-dark);
+    font-family: var(--font-main);
+    color: #ffffff;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+#game-container {
+    position: relative;
+    width: 900px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-image: radial-gradient(circle at center, #1a1a1a 0%, #0d0d0d 100%);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--glass-border);
+}
+
+#hud {
+    position: absolute;
+    top: 20px;
+    left: 10%;
+    right: 10%;
+    height: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    border-radius: 12px;
+    z-index: 10;
+}
+
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.hud-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hud-item.title h1 {
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #fff, var(--primary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-top: 5px;
+}
+
+.label {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+}
+
+#score-value, #timer-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+#gameCanvas {
+    background: #1a1a1a;
+    border-radius: 16px;
+    cursor: crosshair;
+}
+
+/* UI Elements */
+#game-over-screen, #start-screen {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    padding: 40px;
+    text-align: center;
+    border-radius: 20px;
+    z-index: 20;
+    animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.title-main {
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #fff 0%, var(--primary-color) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));
+}
+
+#game-over-screen h2 {
+    margin-bottom: 10px;
+    color: var(--warning-color);
+    font-size: 2rem;
+}
+
+#game-over-screen p {
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+    opacity: 0.8;
+}
+
+#final-score {
+    font-size: 3rem;
+    font-weight: 800;
+    display: block;
+    margin: 10px 0;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+#start-screen p {
+    margin-bottom: 30px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.primary-btn {
+    padding: 16px 32px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #2980b9 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+}
+
+.primary-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 15px 25px rgba(52, 152, 219, 0.5);
+}
+
+.primary-btn:active {
+    transform: translateY(0);
+}
+
+#controls-hint {
+    position: absolute;
+    bottom: 20px;
+    padding: 12px 25px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translate(-50%, -30%) scale(0.9); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}

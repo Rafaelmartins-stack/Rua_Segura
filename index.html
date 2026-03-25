@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rua Segura - Simulador de Trânsito</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <header id="hud" class="glass-panel">
+            <div class="hud-item">
+                <span class="label">PONTOS</span>
+                <span id="score-value">0</span>
+            </div>
+            <div class="hud-item title">
+                <h1>RUA SEGURA</h1>
+            </div>
+            <div class="hud-item">
+                <span class="label">TEMPO</span>
+                <span id="timer-value">02:00</span>
+            </div>
+        </header>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="start-screen" class="glass-panel">
+            <h1 class="title-main">RUA SEGURA</h1>
+            <p>Assuma o controle do trânsito!<br>Fiscalize avanços de sinal e motoristas usando celular para manter a cidade segura.</p>
+            <button id="start-btn" class="primary-btn">Iniciar Turno</button>
+        </div>
+
+        <div id="game-over-screen" class="hidden glass-panel">
+            <h2>Fim de Turno!</h2>
+            <p>Sua pontuação final: <span id="final-score">0</span></p>
+            <button id="restart-btn" class="primary-btn">Reiniciar Patrulha</button>
+        </div>
+
+        <div id="controls-hint" class="glass-panel">
+            <p>🚦 Clique no semáforo para alternar<br>🚗 Clique em carros infratores (Avanço de sinal ou Celular) para multar</p>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

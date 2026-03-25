@@ -30,17 +30,17 @@ const blitzBtn = document.getElementById('blitz-btn');
 
 // --- Configurações ---
 const DIFFICULTY = {
-    carSpawnRate: 0.025,       
-    minCarSpeed: 2.2,           
-    maxCarSpeed: 4.5,           
-    phoneInfractionRate: 0.3, 
-    redLightInfractionRate: 0.3, 
+    carSpawnRate: 0.025,
+    minCarSpeed: 2.2,
+    maxCarSpeed: 4.5,
+    phoneInfractionRate: 0.3,
+    redLightInfractionRate: 0.3,
     gameDurationSeconds: 300,  // 5 Minutos (300 segundos)
-    stopLineX: 650,           
-    blitzLineX: 450,          
-    safeDistance: 140,        
-    minimumGap: 35,           
-    laneCount: 4,             
+    stopLineX: 650,
+    blitzLineX: 450,
+    safeDistance: 140,
+    minimumGap: 35,
+    laneCount: 4,
 };
 
 const NAMES = ["José", "Maria", "João", "Ana", "Carlos", "Francisca", "Paulo", "Antônia", "Lucas", "Adriana", "Pedro", "Juliana"];
@@ -52,13 +52,13 @@ let gameState = {
     timeLeft: DIFFICULTY.gameDurationSeconds,
     isGameOver: false,
     hasStarted: false,
-    isPaused: false, 
-    trafficLight: 'GREEN', 
+    isPaused: false,
+    trafficLight: 'GREEN',
     isBlitzActive: false,
     blitzCooldown: false,
-    currentLicenseCar: null, 
+    currentLicenseCar: null,
     cars: [],
-    feedbackMessages: [], 
+    feedbackMessages: [],
 };
 
 // --- Cores ---
@@ -69,12 +69,12 @@ const COLORS = {
     trafficRed: '#e74c3c',
     police: '#2980b9',
     carColors: [
-        { main: '#3498db', dark: '#2980b9' }, 
-        { main: '#e74c3c', dark: '#c0392b' }, 
-        { main: '#f1c40f', dark: '#f39c12' }, 
-        { main: '#9b59b6', dark: '#8e44ad' }, 
-        { main: '#1abc9c', dark: '#16a085' }, 
-        { main: '#ecf0f1', dark: '#bdc3c7' }  
+        { main: '#3498db', dark: '#2980b9' },
+        { main: '#e74c3c', dark: '#c0392b' },
+        { main: '#f1c40f', dark: '#f39c12' },
+        { main: '#9b59b6', dark: '#8e44ad' },
+        { main: '#1abc9c', dark: '#16a085' },
+        { main: '#ecf0f1', dark: '#bdc3c7' }
     ],
 };
 
@@ -83,36 +83,36 @@ const COLORS = {
 class Car {
     constructor(lane) {
         this.width = 110;
-        this.height = 45; 
-        this.x = -this.width - 60; 
+        this.height = 45;
+        this.x = -this.width - 60;
         this.lane = lane;
-        this.y = 210 + (this.lane * 50); 
+        this.y = 210 + (this.lane * 50);
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
         const colorSet = COLORS.carColors[Math.floor(Math.random() * COLORS.carColors.length)];
         this.color = colorSet.main;
         this.darkColor = colorSet.dark;
-        
+
         this.name = NAMES[Math.floor(Math.random() * NAMES.length)] + " " + SURNAMES[Math.floor(Math.random() * SURNAMES.length)];
-        this.age = Math.floor(Math.random() * 60) + 12; 
+        this.age = Math.floor(Math.random() * 60) + 12;
         this.plate = this.generatePlate();
-        this.hasLicense = Math.random() < 0.82; 
+        this.hasLicense = Math.random() < 0.82;
         this.licensePoints = Math.floor(Math.random() * 60);
 
         this.hasPhoneInfraction = Math.random() < DIFFICULTY.phoneInfractionRate;
         this.willIgnoreRedLight = Math.random() < DIFFICULTY.redLightInfractionRate;
 
         this.committedRedLightInfraction = false;
-        this.hasBeenPenalized = false; 
+        this.hasBeenPenalized = false;
         this.isFined = false;
-        this.isInspected = false; 
-        this.isApprehended = false; 
+        this.isInspected = false;
+        this.isApprehended = false;
     }
 
     generatePlate() {
         const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        return letters[Math.floor(Math.random()*26)] + letters[Math.floor(Math.random()*26)] + letters[Math.floor(Math.random()*26)] + 
-               Math.floor(Math.random()*10) + letters[Math.floor(Math.random()*26)] + Math.floor(Math.random()*10) + Math.floor(Math.random()*10);
+        return letters[Math.floor(Math.random() * 26)] + letters[Math.floor(Math.random() * 26)] + letters[Math.floor(Math.random() * 26)] +
+            Math.floor(Math.random() * 10) + letters[Math.floor(Math.random() * 26)] + Math.floor(Math.random() * 10) + Math.floor(Math.random() * 10);
     }
 
     update(trafficLight, isBlitzActive) {
@@ -131,7 +131,7 @@ class Car {
         const carAhead = gameState.cars
             .filter(c => c !== this && Math.abs(c.y - this.y) < 30 && c.x > this.x)
             .sort((a, b) => a.x - b.x)[0];
-        
+
         let targetSpeed = this.baseSpeed;
 
         if (!this.willIgnoreRedLight && !isBlitzActive) {
@@ -155,7 +155,7 @@ class Car {
 
         if (this.speed > targetSpeed) { this.speed = Math.max(targetSpeed, this.speed - 0.4); }
         else if (this.speed < targetSpeed) { this.speed = Math.min(targetSpeed, this.speed + 0.2); }
-        
+
         let nextX = this.x + this.speed;
         if (carAhead) {
             if (nextX + this.width > carAhead.x - DIFFICULTY.minimumGap) {
@@ -200,8 +200,8 @@ class Car {
         }
 
         if (gameState.isBlitzActive && this.x + this.width > DIFFICULTY.blitzLineX - 80 && this.x < DIFFICULTY.blitzLineX + 50 && !this.isInspected && !this.isApprehended) {
-             const carAhead = gameState.cars.find(c => c.x > this.x && c.x + c.width > DIFFICULTY.blitzLineX - 80 && !c.isInspected && !c.isApprehended);
-             if (!carAhead) this.drawRequestBubble(ctx);
+            const carAhead = gameState.cars.find(c => c.x > this.x && c.x + c.width > DIFFICULTY.blitzLineX - 80 && !c.isInspected && !c.isApprehended);
+            if (!carAhead) this.drawRequestBubble(ctx);
         }
     }
 
@@ -235,7 +235,7 @@ function resolveInspection(isFining) {
     inspectionScreen.classList.add('hidden'); gameState.isPaused = false;
     const car = gameState.currentLicenseCar; car.isInspected = true;
     const isIrregular = !car.hasLicense || car.age < 18 || car.hasPhoneInfraction || car.licensePoints >= 40;
-    
+
     if (isFining) {
         if (isIrregular) {
             gameState.score += 150;
@@ -314,12 +314,12 @@ failRestartBtn.addEventListener('click', resetGame);
 blitzBtn.addEventListener('click', () => {
     if (gameState.isBlitzActive || gameState.blitzCooldown || !gameState.hasStarted) return;
     gameState.isBlitzActive = true; blitzBtn.disabled = true;
-    let bTime = 20; 
+    let bTime = 20;
     const bItv = setInterval(() => {
         bTime--; blitzBtn.innerText = `BLITZ (${bTime}s)`;
         if (bTime <= 0) {
             clearInterval(bItv); gameState.isBlitzActive = false; gameState.blitzCooldown = true;
-            gameState.cars.forEach(c => { if(!c.isInspected) c.isInspected = true; });
+            gameState.cars.forEach(c => { if (!c.isInspected) c.isInspected = true; });
             let cTime = 20;
             const cItv = setInterval(() => {
                 cTime--; blitzBtn.innerText = `RECARGA (${cTime}s)`;
@@ -331,14 +331,14 @@ blitzBtn.addEventListener('click', () => {
 
 function drawBackground() {
     ctx.fillStyle = '#34495e'; ctx.fillRect(0, 180, canvas.width, 240);
-    ctx.fillStyle = COLORS.road; ctx.fillRect(0, 200, canvas.width, 220); 
+    ctx.fillStyle = COLORS.road; ctx.fillRect(0, 200, canvas.width, 220);
     ctx.setLineDash([40, 30]); ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 3;
-    for(let i = 1; i < DIFFICULTY.laneCount; i++) {
+    for (let i = 1; i < DIFFICULTY.laneCount; i++) {
         ctx.beginPath(); ctx.moveTo(0, 200 + (i * 50)); ctx.lineTo(canvas.width, 200 + (i * 50)); ctx.stroke();
     }
     ctx.setLineDash([]);
     const zebraX = DIFFICULTY.stopLineX - 80; ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    for(let i = 0; i < 11; i++) { ctx.fillRect(zebraX, 205 + (i * 20), 60, 10); }
+    for (let i = 0; i < 11; i++) { ctx.fillRect(zebraX, 205 + (i * 20), 60, 10); }
     ctx.fillStyle = COLORS.line; ctx.fillRect(DIFFICULTY.stopLineX - 8, 200, 16, 220);
     const lightX = DIFFICULTY.stopLineX + 20; ctx.fillStyle = '#444'; ctx.fillRect(lightX - 6, 150, 12, 300);
     ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(lightX - 25, 80, 50, 110, 10); ctx.fill();
@@ -358,20 +358,20 @@ function gameLoop() {
     if (!gameState.isGameOver && gameState.hasStarted) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (!gameState.isPaused) {
-            if (Math.random() < DIFFICULTY.carSpawnRate) { 
-                let lane = Math.floor(Math.random() * DIFFICULTY.laneCount); 
-                if (canSpawn(lane)) { gameState.cars.push(new Car(lane)); } 
+            if (Math.random() < DIFFICULTY.carSpawnRate) {
+                let lane = Math.floor(Math.random() * DIFFICULTY.laneCount);
+                if (canSpawn(lane)) { gameState.cars.push(new Car(lane)); }
             }
             gameState.cars = gameState.cars.filter(car => { return car.y > -150 && !car.update(gameState.trafficLight, gameState.isBlitzActive); });
         }
         drawBackground();
-        gameState.cars.sort((a,b) => b.x - a.x).forEach(c => c.draw(ctx));
+        gameState.cars.sort((a, b) => b.x - a.x).forEach(c => c.draw(ctx));
         ctx.textAlign = 'center';
-        for (let i = gameState.feedbackMessages.length-1; i>=0; i--) {
+        for (let i = gameState.feedbackMessages.length - 1; i >= 0; i--) {
             let m = gameState.feedbackMessages[i]; ctx.fillStyle = m.color; ctx.globalAlpha = m.opacity;
             ctx.font = m.text.length > 30 ? "bold 14px Arial" : "bold 20px Arial"; ctx.fillText(m.text, m.x, m.y);
             if (!gameState.isPaused) { m.y -= 0.6; m.opacity -= 0.006; m.timer--; }
-            if (m.timer <= 0) gameState.feedbackMessages.splice(i,1);
+            if (m.timer <= 0) gameState.feedbackMessages.splice(i, 1);
         }
         ctx.globalAlpha = 1; requestAnimationFrame(gameLoop);
     } else { gameState.loopRunning = false; }

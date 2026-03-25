@@ -135,12 +135,18 @@ class Car {
             }
         }
 
-        // Colisão com o da frente
-        const carAhead = gameState.cars.find(c => c !== this && c.lane === this.lane && c.x > this.x);
+        // Colisão Robusta (Considera proximidade vertical para fusão de faixas)
+        const carAhead = gameState.cars.find(c => {
+            return c !== this && 
+                   c.x > this.x && 
+                   Math.abs(c.y - this.y) < 35 && // Se estiverem próximos verticalmente
+                   (c.x - (this.x + this.width)) < 130; // Distância de segurança
+        });
+
         if (carAhead) {
             const gap = carAhead.x - (this.x + this.width);
-            if (gap < 40) targetSpeed = 0;
-            else if (gap < 120) targetSpeed = Math.min(targetSpeed, carAhead.speed);
+            if (gap < 30) targetSpeed = 0; // Travado se estiver muito perto
+            else targetSpeed = Math.min(targetSpeed, carAhead.speed * (gap / 130)); // Desacelera proporcionalmente
         }
 
         if (this.speed > targetSpeed) this.speed = Math.max(targetSpeed, this.speed - 0.2);

@@ -20,11 +20,11 @@ const DIFFICULTY = {
     minCarSpeed: 2.2,           
     maxCarSpeed: 4.5,           
     phoneInfractionRate: 0.3, 
-    redLightInfractionRate: 0.3, // Aumentado para 30% conforme pedido
+    redLightInfractionRate: 0.3, 
     gameDurationSeconds: 120, 
     stopLineX: 620,           
-    safeDistance: 160,        // Aumentado para mais tempo de reação
-    minimumGap: 30,           // Espaço visual garantido entre parachoques
+    safeDistance: 160,        
+    minimumGap: 30,           
 };
 
 // --- Estado do Jogo ---
@@ -38,7 +38,7 @@ let gameState = {
     feedbackMessages: [], 
 };
 
-// --- Cores ---
+// --- Estética ---
 const COLORS = {
     road: '#2c3e50',
     line: '#ecf0f1',
@@ -62,7 +62,6 @@ class Car {
         this.height = 55;
         this.x = -this.width - 60; 
         this.lane = lane;
-        // Posição Y ajustada para garantir separação total entre pistas
         this.y = 250 + (this.lane === 0 ? -55 : 55); 
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
@@ -80,7 +79,6 @@ class Car {
     }
 
     update(trafficLight, stopLineX, carsInLane) {
-        // Encontrar o carro imediatamente à frente (menor X entre os que têm X maior que o meu)
         const carAhead = carsInLane
             .filter(c => c !== this && c.x > this.x)
             .sort((a, b) => a.x - b.x)[0];
@@ -88,32 +86,30 @@ class Car {
         let targetSpeed = this.baseSpeed;
         const frontX = this.x + this.width;
 
-        // 1. Semáforo
+        // Semáforo
         if (!this.willIgnoreRedLight) {
-            // Distância de parada (inicia frenagem a 250px, para a 15px da linha)
             if (trafficLight === 'RED' && frontX < stopLineX - 10 && frontX > stopLineX - 300) {
                 targetSpeed = 0;
             }
         }
 
-        // 2. Colisão / Distância entre carros
+        // Colisão
         if (carAhead) {
             const currentGap = carAhead.x - frontX;
             if (currentGap < DIFFICULTY.safeDistance) {
-                // Reduz velocidade de forma que se torne 0 ao atingir o gap mínimo
                 const ratio = Math.max(0, (currentGap - DIFFICULTY.minimumGap) / (DIFFICULTY.safeDistance - DIFFICULTY.minimumGap));
                 targetSpeed = Math.min(targetSpeed, carAhead.speed * ratio);
             }
         }
 
-        // Aceleração/Desaceleração
+        // Suavização do movimento
         if (this.speed > targetSpeed) {
-            this.speed = Math.max(targetSpeed, this.speed - 0.3); // Frenagem firme
+            this.speed = Math.max(targetSpeed, this.speed - 0.3);
         } else if (this.speed < targetSpeed) {
             this.speed = Math.min(targetSpeed, this.speed + 0.15);
         }
 
-        // 3. Aplicação do movimento com trava física de colisão
+        // Aplicação do movimento + Trava física
         let nextX = this.x + this.speed;
         if (carAhead) {
             if (nextX + this.width > carAhead.x - DIFFICULTY.minimumGap) {
@@ -123,7 +119,7 @@ class Car {
         }
         this.x = nextX;
 
-        // 4. Detecção de Infração
+        // Detecção de Infração (Passando no sinal vermelho)
         if (trafficLight === 'RED' && (this.x + this.width) > stopLineX && this.x < stopLineX + 40 && this.speed > 0.4) {
             this.committedRedLightInfraction = true;
             if (!this.hasBeenPenalized) {
@@ -133,6 +129,17 @@ class Car {
                 scoreEl.innerText = gameState.score;
             }
         }
+
+        // --- NOVA MECÂNICA: Reiniciar se infração de celular ESCAPAR ---
+        if (this.x > canvas.width) {
+            if (this.hasPhoneInfraction && !this.isFined) {
+                // Motorista escapou usando celular! Jogo reinicia.
+                alert('UM MOTORISTA DE CELULAR ESCAPOU! Patrulha encerrada.');
+                resetGame();
+                return true; // Flag para o loop remover este carro ou parar processamento
+            }
+        }
+        return false;
     }
 
     draw(ctx) {
@@ -175,7 +182,7 @@ class Car {
         this.drawWheel(ctx, this.x + 80, this.y - 4);
         this.drawWheel(ctx, this.x + 80, this.y + this.height - 6);
 
-        // Celular (Visible)
+        // Celular (Visível)
         if (this.hasPhoneInfraction) {
             ctx.fillStyle = '#000';
             ctx.roundRect(this.x + 82, this.y + 20, 8, 14, 2);
@@ -221,7 +228,6 @@ function startGame() {
     gameState.hasStarted = true;
     startScreen.classList.add('hidden');
     resetGame();
-    requestAnimationFrame(gameLoop);
 }
 
 function resetGame() {
@@ -234,11 +240,20 @@ function resetGame() {
     scoreEl.innerText = '0';
     gameOverScreen.classList.add('hidden');
     timerEl.innerText = '02:00';
+    
+    // Inicia o loop se ainda não estiver rodando (suporte para restart automático)
+    if (!gameState.loopRunning) {
+        gameState.loopRunning = true;
+        requestAnimationFrame(gameLoop);
+    }
+    
     startTimer();
 }
 
+let timerInterval = null;
 function startTimer() {
-    const timerInterval = setInterval(() => {
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
         if (gameState.isGameOver || !gameState.hasStarted) {
             clearInterval(timerInterval);
             return;
@@ -262,7 +277,6 @@ function addFeedback(text, x, y, color) {
 }
 
 function canSpawn(lane) {
-    // Verificação de espaço ultra-segura para spawn
     return !gameState.cars.some(car => car.lane === lane && car.x < 220);
 }
 
@@ -352,16 +366,23 @@ function gameLoop() {
             }
         }
         drawBackground();
-        gameState.cars = gameState.cars.filter(car => car.x < canvas.width + 250);
         
-        // ORDENAR CARROS POR POSIÇÃO NO EIXO X (Fundamental para a colisão da fila)
-        gameState.cars.sort((a, b) => b.x - a.x);
+        // Remove carros que saíram da tela OU reinicia se celular escapou
+        let resetRequested = false;
+        gameState.cars = gameState.cars.filter(car => {
+            const shouldRemove = car.x < canvas.width + 250;
+            const triggerReset = car.update(gameState.trafficLight, DIFFICULTY.stopLineX, gameState.cars.filter(c => c.lane === car.lane));
+            if (triggerReset) resetRequested = true;
+            return shouldRemove;
+        });
 
+        if (resetRequested) return; // Se resetou, o loop será reiniciado pela função resetGame
+
+        gameState.cars.sort((a, b) => b.x - a.x);
         for (let car of gameState.cars) {
-            const laneCars = gameState.cars.filter(c => c.lane === car.lane);
-            car.update(gameState.trafficLight, DIFFICULTY.stopLineX, laneCars);
             car.draw(ctx);
         }
+        
         ctx.textAlign = 'center';
         for (let i = gameState.feedbackMessages.length - 1; i >= 0; i--) {
             let msg = gameState.feedbackMessages[i];
@@ -373,6 +394,8 @@ function gameLoop() {
         }
         ctx.globalAlpha = 1;
         requestAnimationFrame(gameLoop);
+    } else {
+        gameState.loopRunning = false;
     }
 }
 

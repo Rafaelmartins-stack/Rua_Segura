@@ -60,7 +60,8 @@ let gameState = {
     currentLicenseCar: null, 
     cars: [],
     feedbackMessages: [], 
-    frameToken: 0 // Para validar se o loop está rodando
+    frameToken: 0, // Para validar se o loop está rodando
+    skyline: [] // Elementos do cenário de fundo
 };
 
 // --- Assets ---
@@ -225,7 +226,52 @@ class Car {
 function init() {
     canvas.width = 900;
     canvas.height = 500;
+    generateSkyline();
     drawBackground();
+}
+
+function generateSkyline() {
+    gameState.skyline = [];
+    let x = -50;
+    while (x < 950) {
+        const isBuilding = Math.random() > 0.4;
+        const w = isBuilding ? (40 + Math.random() * 60) : (50 + Math.random() * 40);
+        const h = isBuilding ? (80 + Math.random() * 120) : (40 + Math.random() * 30);
+        
+        gameState.skyline.push({
+            x: x,
+            w: w,
+            h: h,
+            type: isBuilding ? 'building' : 'house',
+            color: isBuilding ? `hsl(210, 20%, ${15 + Math.random() * 10}%)` : `hsl(20, 20%, ${20 + Math.random() * 10}%)`,
+            windows: generateWindows(isBuilding, w, h)
+        });
+        x += w + (5 + Math.random() * 15);
+    }
+}
+
+function generateWindows(isBuilding, w, h) {
+    const windows = [];
+    if (isBuilding) {
+        const rows = Math.floor(h / 20);
+        const cols = Math.floor(w / 15);
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                if (Math.random() > 0.4) {
+                    windows.push({
+                        x: 5 + c * 15,
+                        y: 10 + r * 20,
+                        on: Math.random() > 0.3
+                    });
+                }
+            }
+        }
+    } else {
+        // Simple house window and door
+        windows.push({ x: w * 0.2, y: h * 0.4, w: 10, h: 10, type: 'window' });
+        windows.push({ x: w * 0.6, y: h * 0.5, w: 12, h: h * 0.5, type: 'door' });
+    }
+    return windows;
 }
 
 function startGame() {
@@ -402,6 +448,59 @@ failRestartBtn.onclick = resetGame;
 
 // --- Loop ---
 function drawBackground() {
+    // Céu/Fundo Superior
+    const skyGradient = ctx.createLinearGradient(0, 0, 0, 200);
+    skyGradient.addColorStop(0, "#0a0a12");
+    skyGradient.addColorStop(1, "#1a1a2e");
+    ctx.fillStyle = skyGradient;
+    ctx.fillRect(0, 0, 900, 200);
+
+    // Desenha Skyline (Prédios e Casas)
+    gameState.skyline.forEach(el => {
+        const groundY = 200;
+        const y = groundY - el.h;
+        
+        // Sombra suave do prédio
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.fillRect(el.x + 4, y + 4, el.w, el.h);
+
+        // Corpo do Prédio/Casa
+        ctx.fillStyle = el.color;
+        ctx.fillRect(el.x, y, el.w, el.h);
+
+        // Detalhes (Janelas/Portas)
+        el.windows.forEach(w => {
+            if (el.type === 'building') {
+                ctx.fillStyle = w.on ? "#f1c40f" : "#2c3e50";
+                ctx.fillRect(el.x + w.x, y + w.y, 8, 12);
+            } else {
+                if (w.type === 'window') {
+                    ctx.fillStyle = "#f1c40f";
+                    ctx.fillRect(el.x + w.x, y + w.y, w.w, w.h);
+                } else {
+                    ctx.fillStyle = "#1a110a";
+                    ctx.fillRect(el.x + w.x, y + w.y, w.w, w.h);
+                }
+            }
+        });
+
+        // Telhado se for casa
+        if (el.type === 'house') {
+            ctx.fillStyle = "#4a2311";
+            ctx.beginPath();
+            ctx.moveTo(el.x - 5, y);
+            ctx.lineTo(el.x + el.w / 2, y - 20);
+            ctx.lineTo(el.x + el.w + 5, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+    });
+
+    // Calçada / Ground para os prédios
+    ctx.fillStyle = "#161616";
+    ctx.fillRect(0, 190, 900, 10);
+
+    // Rua e arredores
     ctx.fillStyle = "#34495e"; ctx.fillRect(0, 180, 900, 240);
     ctx.fillStyle = COLORS.road; ctx.fillRect(0, 200, 900, 210);
     

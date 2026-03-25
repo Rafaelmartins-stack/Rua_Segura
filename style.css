@@ -146,9 +146,8 @@ body {
     color: rgba(255, 255, 255, 0.8);
 }
 
-.primary-btn {
+.primary-btn, .secondary-btn {
     padding: 16px 32px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #2980b9 100%);
     border: none;
     border-radius: 12px;
     color: white;
@@ -158,12 +157,33 @@ body {
     text-transform: uppercase;
     letter-spacing: 1px;
     transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #2980b9 100%);
     box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+}
+
+.secondary-btn {
+    background: linear-gradient(135deg, var(--warning-color) 0%, #f39c12 100%);
+    box-shadow: 0 10px 20px rgba(241, 196, 15, 0.2);
 }
 
 .primary-btn:hover {
     transform: translateY(-3px) scale(1.02);
     box-shadow: 0 15px 25px rgba(52, 152, 219, 0.5);
+}
+
+.secondary-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 15px 25px rgba(243, 156, 18, 0.4);
+}
+
+.secondary-btn:disabled {
+    background: #555;
+    opacity: 0.5;
+    cursor: wait;
 }
 
 .primary-btn:active {

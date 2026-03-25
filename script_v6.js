@@ -145,12 +145,9 @@ class Car {
         // Colisão Inteligente (MÁXIMA PRECISÃO)
         const carAhead = gameState.cars.find(c => {
             if (c === this) return false;
-            if (c.x < this.x) return false; // Ignora carros atrás
-            const yDist = Math.abs(c.y - this.y);
-            const horizontalGap = c.x - (this.x + this.width);
-            
-            // Detecta carros na mesma pista ou em transição (Y próximo)
-            return yDist < 40 && horizontalGap > -this.width * 0.5 && horizontalGap < 150;
+            // Detecta carros próximos no eixo Y (mesma faixa ou transição)
+            // horizontalGap > -20 garante que mesmo se houver pequena sobreposição, ele ainda detecta como obstáculo à frente
+            return yDist < 45 && horizontalGap > -30 && horizontalGap < 160;
         });
 
         if (carAhead) {
@@ -426,6 +423,7 @@ canvas.addEventListener('mousedown', (e) => {
 blitzBtn.addEventListener('click', () => {
     if (gameState.isBlitzActive || gameState.blitzCooldown) return;
     gameState.isBlitzActive = true;
+    gameState.trafficLight = 'RED'; // Força sinal vermelho na Blitz
     blitzBtn.disabled = true;
     let bt = 20;
     const bi = setInterval(() => {

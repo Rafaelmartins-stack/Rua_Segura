@@ -186,6 +186,64 @@ body {
     cursor: wait;
 }
 
+#document-inspection {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #fdfdfd;
+    color: #1a1a1a;
+    z-index: 50;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+}
+
+.cnh-header {
+    background: #006b3f; /* Verde CNH */
+    color: white;
+    padding: 15px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-align: center;
+    letter-spacing: 1px;
+    border-bottom: 3px solid #f1c40f; /* Detalhe dourado */
+}
+
+.cnh-body {
+    padding: 25px;
+}
+
+.details p {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.details hr {
+    margin: 20px 0;
+    border: 0.5px dashed #ccc;
+}
+
+.details strong {
+    font-size: 0.75rem;
+    color: #666;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.primary-btn.danger { background: var(--danger-color); padding: 12px; font-size: 0.9rem; flex: 1; }
+.primary-btn.success { background: var(--success-color); padding: 12px; font-size: 0.9rem; flex: 1; }
+
 .primary-btn:active {
     transform: translateY(0);
 }

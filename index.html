@@ -33,6 +33,22 @@
             <button id="start-btn" class="primary-btn">Iniciar Turno</button>
         </div>
 
+        <div id="document-inspection" class="hidden glass-panel">
+            <div class="cnh-header">CARTEIRA NACIONAL DE HABILITAÇÃO</div>
+            <div class="cnh-body">
+                <div class="details">
+                    <p><strong>PONTUAÇÃO:</strong> <span id="cnh-points">0</span></p>
+                    <p><strong>MULTAS PENDENTES:</strong> <span id="cnh-fines">Nenhuma</span></p>
+                    <hr>
+                    <p><strong>DOCUMENTO VEÍCULO (CRLV):</strong> <span id="cnh-ipva">EM DIA</span></p>
+                </div>
+                <div class="actions">
+                    <button id="inspect-fine-btn" class="primary-btn danger">MULTAR</button>
+                    <button id="inspect-release-btn" class="primary-btn success">LIBERAR</button>
+                </div>
+            </div>
+        </div>
+
         <div id="game-over-screen" class="hidden glass-panel">
             <h2>Fim de Turno!</h2>
             <p>Sua pontuação final: <span id="final-score">0</span></p>

@@ -130,7 +130,13 @@ class Car {
         const frontX = this.x + this.width;
         // FIX: Mantida lógica de detecção precisa com ordenação
         const carAhead = gameState.cars
-            .filter(c => c !== this && Math.abs(c.y - this.y) < 45 && c.x > this.x)
+            .filter(c => {
+                if (c === this || c.x <= this.x) return false;
+                // Durante a Blitz, considera todos os carros à frente na fila (faixa 0)
+                if (isBlitzActive && !this.isInspected && !c.isInspected) return true;
+                // Trânsito normal: apenas carros na mesma faixa (distância Y < 45)
+                return Math.abs(c.y - this.y) < 45;
+            })
             .sort((a, b) => a.x - b.x)[0];
 
         let targetSpeed = this.baseSpeed;
@@ -154,7 +160,7 @@ class Car {
             }
         }
 
-        if (this.speed > targetSpeed) { this.speed = Math.max(targetSpeed, this.speed - 0.5); }
+        if (this.speed > targetSpeed) { this.speed = Math.max(targetSpeed, this.speed - 0.7); }
         else if (this.speed < targetSpeed) { this.speed = Math.min(targetSpeed, this.speed + 0.2); }
 
         let nextX = this.x + this.speed;

@@ -10,8 +10,10 @@ const scoreEl = document.getElementById('score-value');
 const timerEl = document.getElementById('timer-value');
 const gameOverScreen = document.getElementById('game-over-screen');
 const startScreen = document.getElementById('start-screen');
+const failScreen = document.getElementById('fail-screen');
 const finalScoreEl = document.getElementById('final-score');
 const restartBtn = document.getElementById('restart-btn');
+const failRestartBtn = document.getElementById('fail-restart-btn');
 const startBtn = document.getElementById('start-btn');
 
 // --- Configurações de Dificuldade ---
@@ -20,11 +22,11 @@ const DIFFICULTY = {
     minCarSpeed: 2.2,           
     maxCarSpeed: 4.5,           
     phoneInfractionRate: 0.3, 
-    redLightInfractionRate: 0.3, // Aumentado conforme solicitado
+    redLightInfractionRate: 0.3, 
     gameDurationSeconds: 120, 
     stopLineX: 620,           
     safeDistance: 160,        
-    minimumGap: 40,           // Aumentado para garantir separação absoluta
+    minimumGap: 40,           
 };
 
 // --- Estado do Jogo ---
@@ -38,7 +40,7 @@ let gameState = {
     feedbackMessages: [], 
 };
 
-// --- Estética ---
+// --- Cores ---
 const COLORS = {
     road: '#2c3e50',
     line: '#ecf0f1',
@@ -65,11 +67,9 @@ class Car {
         this.y = 250 + (this.lane === 0 ? -55 : 55); 
         this.baseSpeed = DIFFICULTY.minCarSpeed + Math.random() * (DIFFICULTY.maxCarSpeed - DIFFICULTY.minCarSpeed);
         this.speed = this.baseSpeed;
-        
         const colorSet = COLORS.carColors[Math.floor(Math.random() * COLORS.carColors.length)];
         this.color = colorSet.main;
         this.darkColor = colorSet.dark;
-        
         this.hasPhoneInfraction = Math.random() < DIFFICULTY.phoneInfractionRate;
         this.willIgnoreRedLight = Math.random() < DIFFICULTY.redLightInfractionRate;
         this.committedRedLightInfraction = false;
@@ -79,22 +79,17 @@ class Car {
     }
 
     update(trafficLight, stopLineX, carsInLane) {
-        // Encontrar carro à frente na faixa correta
         const carAhead = carsInLane
             .filter(c => c !== this && c.x > this.x)
             .sort((a, b) => a.x - b.x)[0];
-
         let targetSpeed = this.baseSpeed;
         const frontX = this.x + this.width;
 
-        // Semáforo
         if (!this.willIgnoreRedLight) {
             if (trafficLight === 'RED' && frontX < stopLineX - 10 && frontX > stopLineX - 300) {
                 targetSpeed = 0;
             }
         }
-
-        // Colisão / Hitbox (Trava Física Garantida)
         if (carAhead) {
             const currentGap = carAhead.x - frontX;
             if (currentGap < DIFFICULTY.safeDistance) {
@@ -102,15 +97,8 @@ class Car {
                 targetSpeed = Math.min(targetSpeed, carAhead.speed * ratio);
             }
         }
-
-        // Suavização
-        if (this.speed > targetSpeed) {
-            this.speed = Math.max(targetSpeed, this.speed - 0.3);
-        } else if (this.speed < targetSpeed) {
-            this.speed = Math.min(targetSpeed, this.speed + 0.15);
-        }
-
-        // --- TRAVA DE HITBOX (IMPOSSÍVEL ENCOSTAR) ---
+        if (this.speed > targetSpeed) { this.speed = Math.max(targetSpeed, this.speed - 0.3); }
+        else if (this.speed < targetSpeed) { this.speed = Math.min(targetSpeed, this.speed + 0.15); }
         let nextX = this.x + this.speed;
         if (carAhead) {
             if (nextX + this.width > carAhead.x - DIFFICULTY.minimumGap) {
@@ -119,8 +107,6 @@ class Car {
             }
         }
         this.x = nextX;
-
-        // Infrações
         if (trafficLight === 'RED' && (this.x + this.width) > stopLineX && this.x < stopLineX + 40 && this.speed > 0.4) {
             this.committedRedLightInfraction = true;
             if (!this.hasBeenPenalized) {
@@ -130,12 +116,10 @@ class Car {
                 scoreEl.innerText = gameState.score;
             }
         }
-
         // Condição de Reset (Celular Escapou)
         if (this.x > canvas.width) {
             if (this.hasPhoneInfraction && !this.isFined) {
-                alert('UM MOTORISTA DE CELULAR ESCAPOU! Patrulha encerrada.');
-                resetGame();
+                showFailScreen();
                 return true; 
             }
         }
@@ -143,13 +127,10 @@ class Car {
     }
 
     draw(ctx) {
-        // Sombra
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath();
         ctx.roundRect(this.x + 5, this.y + 8, this.width, this.height, 10);
         ctx.fill();
-
-        // Corpo
         const grad = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
         grad.addColorStop(0, this.color);
         grad.addColorStop(1, this.darkColor);
@@ -157,28 +138,20 @@ class Car {
         ctx.beginPath();
         ctx.roundRect(this.x, this.y, this.width, this.height, 8);
         ctx.fill();
-
-        // Vidros
         ctx.fillStyle = 'rgba(174, 190, 196, 0.9)';
         ctx.beginPath();
         ctx.roundRect(this.x + 75, this.y + 8, 25, this.height - 16, [0, 5, 5, 0]);
         ctx.fill();
-
-        // Luzes
         ctx.fillStyle = '#fff9c4'; 
         ctx.fillRect(this.x + this.width - 5, this.y + 8, 5, 12);
         ctx.fillRect(this.x + this.width - 5, this.y + this.height - 20, 5, 12);
         ctx.fillStyle = '#ef5350'; 
         ctx.fillRect(this.x, this.y + 8, 3, 12);
         ctx.fillRect(this.x, this.y + this.height - 20, 3, 12);
-
-        // Rodas (Estáticas horizontais)
         this.drawWheel(ctx, this.x + 20, this.y - 4);
         this.drawWheel(ctx, this.x + 20, this.y + this.height - 6);
         this.drawWheel(ctx, this.x + 80, this.y - 4);
         this.drawWheel(ctx, this.x + 80, this.y + this.height - 6);
-
-        // Celular
         if (this.hasPhoneInfraction) {
             ctx.fillStyle = '#000';
             ctx.roundRect(this.x + 82, this.y + 20, 8, 14, 2);
@@ -186,8 +159,6 @@ class Car {
             ctx.fillStyle = this.isFined ? COLORS.trafficGreen : '#3498db';
             ctx.fillRect(this.x + 83, this.y + 22, 6, 10);
         }
-
-        // Feedback
         if (this.isFined) {
             ctx.strokeStyle = this.wasWronglyFined ? COLORS.trafficRed : COLORS.trafficGreen;
             ctx.lineWidth = 4;
@@ -219,6 +190,11 @@ function startGame() {
     resetGame();
 }
 
+function showFailScreen() {
+    gameState.isGameOver = true;
+    failScreen.classList.remove('hidden');
+}
+
 function resetGame() {
     gameState.score = 0;
     gameState.timeLeft = DIFFICULTY.gameDurationSeconds;
@@ -228,6 +204,7 @@ function resetGame() {
     gameState.feedbackMessages = [];
     scoreEl.innerText = '0';
     gameOverScreen.classList.add('hidden');
+    failScreen.classList.add('hidden');
     timerEl.innerText = '02:00';
     if (!gameState.loopRunning) {
         gameState.loopRunning = true;
@@ -293,6 +270,7 @@ canvas.addEventListener('mousedown', (e) => {
 
 startBtn.addEventListener('click', startGame);
 restartBtn.addEventListener('click', resetGame);
+failRestartBtn.addEventListener('click', resetGame);
 
 // --- Loop ---
 
@@ -316,7 +294,8 @@ function drawBackground() {
 
 function drawLight(ctx, x, y, color) {
     if (color !== '#111') { ctx.shadowBlur = 20; ctx.shadowColor = color; }
-    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
 }
 
 function drawStaticFrame() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBackground(); }
@@ -332,8 +311,8 @@ function gameLoop() {
         let resetRequested = false;
         gameState.cars = gameState.cars.filter(car => {
             const shouldRemove = car.x < canvas.width + 250;
-            const triggerReset = car.update(gameState.trafficLight, DIFFICULTY.stopLineX, gameState.cars.filter(c => c.lane === car.lane));
-            if (triggerReset) resetRequested = true;
+            const triggerFail = car.update(gameState.trafficLight, DIFFICULTY.stopLineX, gameState.cars.filter(c => c.lane === car.lane));
+            if (triggerFail) resetRequested = true;
             return shouldRemove;
         });
         if (resetRequested) return;

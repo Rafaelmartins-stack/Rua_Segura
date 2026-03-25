@@ -1,5 +1,5 @@
 /**
- * Rua Segura - v6.0 (ULTIMATE STABILITY FIX)
+ * Rua Segura - v6.1 (Assets Fixed)
  * @description Jogo de fiscalização de trânsito desenvolvido em JavaScript Vanilla.
  * @author Antigravity
  */

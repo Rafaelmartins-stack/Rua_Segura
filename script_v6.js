@@ -179,9 +179,14 @@ class Car {
         ctx.fillStyle = "rgba(0,0,0,0.3)";
         ctx.fillRect(this.x + 5, this.y + 10, this.width - 10, this.height - 10);
         
-        // Desenha Sprite Pixel Art
+        // Desenha Sprite Pixel Art Invertido (Para virar para a Direita)
         ctx.imageSmoothingEnabled = false; 
-        ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
+        ctx.save();
+        // Inverte horizontalmente: translada para o ponto X final do carro, escala -1
+        ctx.translate(this.x + this.width, this.y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(this.sprite, 0, 0, this.width, this.height);
+        ctx.restore();
         
         // Celular (Ícone flutuante sobre o carro)
         if (this.hasPhoneInfraction) {

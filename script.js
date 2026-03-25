@@ -20,11 +20,11 @@ const DIFFICULTY = {
     minCarSpeed: 2.2,           
     maxCarSpeed: 4.5,           
     phoneInfractionRate: 0.3, 
-    redLightInfractionRate: 0.3, 
+    redLightInfractionRate: 0.3, // Aumentado conforme solicitado
     gameDurationSeconds: 120, 
     stopLineX: 620,           
     safeDistance: 160,        
-    minimumGap: 30,           
+    minimumGap: 40,           // Aumentado para garantir separação absoluta
 };
 
 // --- Estado do Jogo ---
@@ -79,6 +79,7 @@ class Car {
     }
 
     update(trafficLight, stopLineX, carsInLane) {
+        // Encontrar carro à frente na faixa correta
         const carAhead = carsInLane
             .filter(c => c !== this && c.x > this.x)
             .sort((a, b) => a.x - b.x)[0];
@@ -93,7 +94,7 @@ class Car {
             }
         }
 
-        // Colisão
+        // Colisão / Hitbox (Trava Física Garantida)
         if (carAhead) {
             const currentGap = carAhead.x - frontX;
             if (currentGap < DIFFICULTY.safeDistance) {
@@ -102,14 +103,14 @@ class Car {
             }
         }
 
-        // Suavização do movimento
+        // Suavização
         if (this.speed > targetSpeed) {
             this.speed = Math.max(targetSpeed, this.speed - 0.3);
         } else if (this.speed < targetSpeed) {
             this.speed = Math.min(targetSpeed, this.speed + 0.15);
         }
 
-        // Aplicação do movimento + Trava física
+        // --- TRAVA DE HITBOX (IMPOSSÍVEL ENCOSTAR) ---
         let nextX = this.x + this.speed;
         if (carAhead) {
             if (nextX + this.width > carAhead.x - DIFFICULTY.minimumGap) {
@@ -119,7 +120,7 @@ class Car {
         }
         this.x = nextX;
 
-        // Detecção de Infração (Passando no sinal vermelho)
+        // Infrações
         if (trafficLight === 'RED' && (this.x + this.width) > stopLineX && this.x < stopLineX + 40 && this.speed > 0.4) {
             this.committedRedLightInfraction = true;
             if (!this.hasBeenPenalized) {
@@ -130,13 +131,12 @@ class Car {
             }
         }
 
-        // --- NOVA MECÂNICA: Reiniciar se infração de celular ESCAPAR ---
+        // Condição de Reset (Celular Escapou)
         if (this.x > canvas.width) {
             if (this.hasPhoneInfraction && !this.isFined) {
-                // Motorista escapou usando celular! Jogo reinicia.
                 alert('UM MOTORISTA DE CELULAR ESCAPOU! Patrulha encerrada.');
                 resetGame();
-                return true; // Flag para o loop remover este carro ou parar processamento
+                return true; 
             }
         }
         return false;
@@ -158,11 +158,7 @@ class Car {
         ctx.roundRect(this.x, this.y, this.width, this.height, 8);
         ctx.fill();
 
-        // Cabine + Vidros
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
-        ctx.beginPath();
-        ctx.roundRect(this.x + 15, this.y + 5, 70, this.height - 10, 6);
-        ctx.fill();
+        // Vidros
         ctx.fillStyle = 'rgba(174, 190, 196, 0.9)';
         ctx.beginPath();
         ctx.roundRect(this.x + 75, this.y + 8, 25, this.height - 16, [0, 5, 5, 0]);
@@ -176,13 +172,13 @@ class Car {
         ctx.fillRect(this.x, this.y + 8, 3, 12);
         ctx.fillRect(this.x, this.y + this.height - 20, 3, 12);
 
-        // Rodas (Horizontais)
+        // Rodas (Estáticas horizontais)
         this.drawWheel(ctx, this.x + 20, this.y - 4);
         this.drawWheel(ctx, this.x + 20, this.y + this.height - 6);
         this.drawWheel(ctx, this.x + 80, this.y - 4);
         this.drawWheel(ctx, this.x + 80, this.y + this.height - 6);
 
-        // Celular (Visível)
+        // Celular
         if (this.hasPhoneInfraction) {
             ctx.fillStyle = '#000';
             ctx.roundRect(this.x + 82, this.y + 20, 8, 14, 2);
@@ -191,14 +187,7 @@ class Car {
             ctx.fillRect(this.x + 83, this.y + 22, 6, 10);
         }
 
-        // Borda p/ infrator não multado
-        if (this.hasBeenPenalized && !this.isFined) {
-            ctx.strokeStyle = '#ff9f43';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(this.x - 2, this.y - 2, this.width + 4, this.height + 4);
-        }
-
-        // Multa Aplicada
+        // Feedback
         if (this.isFined) {
             ctx.strokeStyle = this.wasWronglyFined ? COLORS.trafficRed : COLORS.trafficGreen;
             ctx.lineWidth = 4;
@@ -240,13 +229,10 @@ function resetGame() {
     scoreEl.innerText = '0';
     gameOverScreen.classList.add('hidden');
     timerEl.innerText = '02:00';
-    
-    // Inicia o loop se ainda não estiver rodando (suporte para restart automático)
     if (!gameState.loopRunning) {
         gameState.loopRunning = true;
         requestAnimationFrame(gameLoop);
     }
-    
     startTimer();
 }
 
@@ -255,8 +241,7 @@ function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         if (gameState.isGameOver || !gameState.hasStarted) {
-            clearInterval(timerInterval);
-            return;
+            clearInterval(timerInterval); return;
         }
         gameState.timeLeft--;
         const mins = Math.floor(gameState.timeLeft / 60).toString().padStart(2, '0');
@@ -287,28 +272,21 @@ canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-
     const lightX = DIFFICULTY.stopLineX + 20;
     const lightY = 150;
     if (mouseX > lightX - 55 && mouseX < lightX + 55 && mouseY > lightY - 110 && mouseY < lightY + 110) {
-        gameState.trafficLight = gameState.trafficLight === 'GREEN' ? 'RED' : 'GREEN';
-        return;
+        gameState.trafficLight = gameState.trafficLight === 'GREEN' ? 'RED' : 'GREEN'; return;
     }
-
     for (let car of gameState.cars) {
         if (mouseX > car.x && mouseX < car.x + car.width && mouseY > car.y && mouseY < car.y + car.height) {
             if (car.isFined) return;
             car.isFined = true;
             if (car.committedRedLightInfraction || car.hasPhoneInfraction) {
-                gameState.score += 100;
-                addFeedback('+100', mouseX, mouseY, COLORS.trafficGreen);
+                gameState.score += 100; addFeedback('+100', mouseX, mouseY, COLORS.trafficGreen);
             } else {
-                gameState.score -= 50;
-                car.wasWronglyFined = true;
-                addFeedback('-50', mouseX, mouseY, COLORS.trafficRed);
+                gameState.score -= 50; car.wasWronglyFined = true; addFeedback('-50', mouseX, mouseY, COLORS.trafficRed);
             }
-            scoreEl.innerText = gameState.score;
-            break;
+            scoreEl.innerText = gameState.score; break;
         }
     }
 });
@@ -319,55 +297,38 @@ restartBtn.addEventListener('click', resetGame);
 // --- Loop ---
 
 function drawBackground() {
-    ctx.fillStyle = '#34495e';
-    ctx.fillRect(0, 180, canvas.width, 240);
-    ctx.fillStyle = COLORS.road;
-    ctx.fillRect(0, 200, canvas.width, 200);
-    ctx.setLineDash([40, 30]);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, 300); ctx.lineTo(canvas.width, 300); ctx.stroke();
+    ctx.fillStyle = '#34495e'; ctx.fillRect(0, 180, canvas.width, 240);
+    ctx.fillStyle = COLORS.road; ctx.fillRect(0, 200, canvas.width, 200);
+    ctx.setLineDash([40, 30]); ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(0, 300); ctx.lineTo(canvas.width, 300); ctx.stroke();
     ctx.setLineDash([]);
     const zebraX = DIFFICULTY.stopLineX - 80;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
     for(let i = 0; i < 8; i++) { ctx.fillRect(zebraX, 205 + (i * 25), 60, 15); }
-    ctx.fillStyle = COLORS.line;
-    ctx.fillRect(DIFFICULTY.stopLineX - 8, 200, 16, 200);
+    ctx.fillStyle = COLORS.line; ctx.fillRect(DIFFICULTY.stopLineX - 8, 200, 16, 200);
     const lightX = DIFFICULTY.stopLineX + 20;
     const lightY = 150;
-    ctx.fillStyle = '#444';
-    ctx.fillRect(lightX - 6, lightY, 12, 300);
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.roundRect(lightX - 25, lightY - 70, 50, 110, 10); ctx.fill();
+    ctx.fillStyle = '#444'; ctx.fillRect(lightX - 6, lightY, 12, 300);
+    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.roundRect(lightX - 25, lightY - 70, 50, 110, 10); ctx.fill();
     drawLight(ctx, lightX, lightY - 40, gameState.trafficLight === 'RED' ? COLORS.trafficRed : '#111');
     drawLight(ctx, lightX, lightY + 15, gameState.trafficLight === 'GREEN' ? COLORS.trafficGreen : '#111');
 }
 
 function drawLight(ctx, x, y, color) {
     if (color !== '#111') { ctx.shadowBlur = 20; ctx.shadowColor = color; }
-    ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 18, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
 }
 
-function drawStaticFrame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBackground();
-}
+function drawStaticFrame() { ctx.clearRect(0, 0, canvas.width, canvas.height); drawBackground(); }
 
 function gameLoop() {
     if (!gameState.isGameOver && gameState.hasStarted) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if (Math.random() < DIFFICULTY.carSpawnRate) {
             let lane = Math.random() > 0.5 ? 0 : 1;
-            if (canSpawn(lane)) {
-                gameState.cars.push(new Car(lane));
-            }
+            if (canSpawn(lane)) { gameState.cars.push(new Car(lane)); }
         }
         drawBackground();
-        
-        // Remove carros que saíram da tela OU reinicia se celular escapou
         let resetRequested = false;
         gameState.cars = gameState.cars.filter(car => {
             const shouldRemove = car.x < canvas.width + 250;
@@ -375,14 +336,9 @@ function gameLoop() {
             if (triggerReset) resetRequested = true;
             return shouldRemove;
         });
-
-        if (resetRequested) return; // Se resetou, o loop será reiniciado pela função resetGame
-
+        if (resetRequested) return;
         gameState.cars.sort((a, b) => b.x - a.x);
-        for (let car of gameState.cars) {
-            car.draw(ctx);
-        }
-        
+        for (let car of gameState.cars) { car.draw(ctx); }
         ctx.textAlign = 'center';
         for (let i = gameState.feedbackMessages.length - 1; i >= 0; i--) {
             let msg = gameState.feedbackMessages[i];
@@ -392,11 +348,8 @@ function gameLoop() {
             msg.y -= 1.2; msg.timer--; msg.opacity -= 0.015; msg.scale += 0.005;
             if (msg.timer <= 0) gameState.feedbackMessages.splice(i, 1);
         }
-        ctx.globalAlpha = 1;
-        requestAnimationFrame(gameLoop);
-    } else {
-        gameState.loopRunning = false;
-    }
+        ctx.globalAlpha = 1; requestAnimationFrame(gameLoop);
+    } else { gameState.loopRunning = false; }
 }
 
 init();

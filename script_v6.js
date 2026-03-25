@@ -204,8 +204,8 @@ class Car {
         // Inspeção Blitz (Garantir que apareça para o primeiro da fila)
         if (gameState.isBlitzActive && this.lane === 0 && !this.isInspected && !this.isApprehended) {
              const carAhead = gameState.cars.find(c => c.lane === 0 && c.x > this.x && !c.isInspected && !c.isApprehended);
-             // Se não tiver ninguém na frente, sou o primeiro. Desenha o balão se estiver perto o suficiente.
-             if (!carAhead && (this.x + this.width) > DIFFICULTY.blitzLineX - 350) {
+             // Se não tiver ninguém na frente, sou o primeiro. Desenha o balão se estiver perto o suficiente E NÃO PASSOU DA LINHA.
+             if (!carAhead && (this.x + this.width) > DIFFICULTY.blitzLineX - 350 && (this.x + this.width) < DIFFICULTY.blitzLineX + 50) {
                  ctx.fillStyle = "#fff";
                  ctx.fillRect(this.x + 30, this.y - 45, 80, 25);
                  ctx.fillStyle = "#222";
@@ -421,6 +421,12 @@ canvas.addEventListener('mousedown', (e) => {
 
 blitzBtn.addEventListener('click', () => {
     if (gameState.isBlitzActive || gameState.blitzCooldown) return;
+    
+    // Marca como "inspecionado" (ignora) qualquer carro que já passou da linha da blitz
+    gameState.cars.forEach(c => {
+        if (c.x > DIFFICULTY.blitzLineX) c.isInspected = true;
+    });
+
     gameState.isBlitzActive = true;
     blitzBtn.disabled = true;
     let bt = 20;
